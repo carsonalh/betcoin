@@ -62,24 +62,22 @@ contract Bookie {
 	function agreeToBet(uint id) public{
 		require(ledger[id].state == STATE_PROPOSED, "This bet is not in an accepting state!");
 		require(msg.sender == ledger[id].better2, "Only the recipient can accept the bet!");
-		
-		if (balances[msg.sender] + baseLine >= ledger[id].better2amount) {
-			if (balances[ledger[id].better1] + baseLine >= ledger[id].better1amount) {
-			
-				unchecked {
+		unchecked {
+			if (balances[msg.sender] + baseLine >= ledger[id].better2amount) {
+				if (balances[ledger[id].better1] + baseLine >= ledger[id].better1amount) {
 					balances[ledger[id].better1] -= ledger[id].better1amount;
 					balances[msg.sender] -= ledger[id].better2amount;
+					
+					ledger[id].state = STATE_CONFIRMED;
+					emit BetAgreedTo(id, ledger[id].judge);
+				} else {
+					ledger[id].state = STATE_ENDED;
+					emit TooLowAccount(ledger[id].better1);
 				}
-				
-				ledger[id].state = STATE_CONFIRMED;
-				emit BetAgreedTo(id, ledger[id].judge);
 			} else {
 				ledger[id].state = STATE_ENDED;
-				emit TooLowAccount(ledger[id].better1);
+				emit TooLowAccount(msg.sender);
 			}
-		} else {
-			ledger[id].state = STATE_ENDED;
-			emit TooLowAccount(msg.sender);
 		}
 	}
 	

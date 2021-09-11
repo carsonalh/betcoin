@@ -104,13 +104,15 @@ describe("Bookie", function () {
 
     });
 
-    it("Should take multiple bets and not fait", async function () {
+    it("Should take multiple bets and not fail", async function () {
         const [bank, better1, better2, judge] = await ethers.getSigners();
-
-        const id = 0;
+		
+		const id1 = 0;
+		const id2 = 1;
+		const id3 = 2;
         const baseline = 50;
         const amount1 = 5;
-        const amount2 = 5;
+        const amount2 = 7;
 
         const Bookie = await ethers.getContractFactory("Bookie");
         const bet = await Bookie.deploy();
@@ -119,18 +121,43 @@ describe("Bookie", function () {
         await bet.mint(baseline);
 
         await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
-        expect(await bet.getState(id)).to.equal(1);
+        expect(await bet.getState(id1)).to.equal(1);
 
-        await bet.connect(better2).agreeToBet(id);
-        expect(await bet.getState(id)).to.equal(2);
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        expect(await bet.getState(id2)).to.equal(1);
 
+        await bet.connect(better2).agreeToBet(id1);
+        expect(await bet.getState(id1)).to.equal(2);
         expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1);
         expect(await bet.connect(better2).getBalance()).to.equal(baseline - amount2);
+		
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        expect(await bet.getState(id3)).to.equal(1);
 
-        await bet.connect(judge).adjudicate(id, 1);
-        expect(await bet.getState(id)).to.equal(3);
-        expect(await bet.connect(better1).getBalance()).to.equal(baseline + amount2);
-        expect(await bet.connect(better2).getBalance()).to.equal(baseline - amount2);
+        await bet.connect(better2).agreeToBet(id2);
+        expect(await bet.getState(id2)).to.equal(2);
+        expect(await bet.connect(better1).getBalance()).to.equal(baseline - 2*amount1);
+        expect(await bet.connect(better2).getBalance()).to.equal(baseline - 2*amount2);
+
+        await bet.connect(judge).adjudicate(id1, 1);
+        expect(await bet.getState(id1)).to.equal(3);
+        expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1 + amount2);
+        expect(await bet.connect(better2).getBalance()).to.equal(baseline - 2*amount2);
+
+        await bet.connect(better2).agreeToBet(id3);
+        expect(await bet.getState(id3)).to.equal(2);
+        expect(await bet.connect(better1).getBalance()).to.equal(baseline - 2*amount1 + amount2);
+        expect(await bet.connect(better2).getBalance()).to.equal(baseline - 3*amount2);
+
+        await bet.connect(judge).adjudicate(id2, 3);
+        expect(await bet.getState(id2)).to.equal(3);
+        expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1 + amount2);
+        expect(await bet.connect(better2).getBalance()).to.equal(baseline - 2*amount2);
+
+        await bet.connect(judge).adjudicate(id3, 2);
+        expect(await bet.getState(id3)).to.equal(3);
+        expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1 + amount2);
+        expect(await bet.connect(better2).getBalance()).to.equal(baseline + amount1 - amount2);
 
     });
 
