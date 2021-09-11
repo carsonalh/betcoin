@@ -57,6 +57,7 @@ contract Bookie {
 	// Create a new bet with time limit. Time = 2**256 - 1 will mean that it will go on until the sun collapses
 	function makeBet(address better2, address judge, int256 better1amount, int256 better2amount, string memory description, uint256 time) public {
 		require(better1amount > 0 && better2amount > 0, "A positive amount is needed to bet!");
+		require(msg.sender != judge && better2 != judge && msg.sender != better2, "These people are not allowed!");
 		uint256 id = largestID;
 		ledger[id] = Bet(msg.sender, better2, judge, better1amount, better2amount, description, STATE_PROPOSED, time);
 		largestID += 1;
