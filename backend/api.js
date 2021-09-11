@@ -55,7 +55,7 @@ app.post('/users', (req, res) => {
                                 user: {
                                     id,
                                     email: user.email,
-                                    name,
+                                    name: row.name,
                                     publicKey,
                                     privateKey
                                 }
@@ -77,7 +77,7 @@ app.post('/users', (req, res) => {
                                         user: {
                                             id,
                                             email: user.email,
-                                            name,
+                                            name: name,
                                             publicKey,
                                             privateKey
                                         }
@@ -234,37 +234,52 @@ app.post('/users/:userId/friends', (req, res) => {
     }
  */
 app.get('/users/:userId/friends', (req, res) => {
-    res
-        .status(200)
-        .json({
-            friends: [
-                {
-                    email: 'test@example.com',
-                    name: 'Test User',
-                    pending: false
-                },
-                {
-                    email: 'example@example.com',
-                    name: 'Example User',
-                    pending: true
-                },
-                {
-                    email: 'carson@example.com',
-                    name: 'Carson',
-                    pending: true
-                },
-                {
-                    email: 'will@example.com',
-                    name: 'Will',
-                    pending: false
-                },
-                {
-                    email: 'isaac@example.com',
-                    name: 'Isaac',
-                    pending: false
-                }
-            ]
-        });
+    connection.query(
+`
+(
+SELECT email, name, FALSE AS pending FROM users
+WHERE
+email IN
+(
+SELECT toEmail AS email FROM friends WHERE fromEmail = ?
+INTERSECT
+SELECT fromEmail AS email FROM friends WHERE toEmail = ?
+)
+)
+UNION
+(
+SELECT email, name, TRUE AS pending FROM users
+WHERE
+email IN
+(
+SELECT toEmail AS email FROM friends X
+WHERE
+    fromEmail = ?
+  AND
+    NOT EXISTS
+(
+SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
+)
+
+)
+)
+`,
+	[ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+	ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId))],
+	(err, results, fields) =>
+	{
+	    res
+		.status(200)
+		.json({
+		    friends: results.map(r => {
+			r.pending = !!r.pending;
+			return r;
+		    })
+		})
+	}
+    )
 });
 
 module.exports = app;

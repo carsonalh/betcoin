@@ -8,6 +8,7 @@ class Login extends React.Component {
     state = {
         email: '',
         password: '',
+        redirect: null,
         error: null
     };
 
@@ -30,6 +31,7 @@ class Login extends React.Component {
     render() {
         return (
             <div className="Login">
+                {this.state.redirect}
                 <div className="Menu">
                     <ul>
                         <li><Link to="/signup">Sign Up Instead</Link></li>
