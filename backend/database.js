@@ -7,13 +7,15 @@ const connection = mysql.createConnection({
     database: 'hackathon'
 });
 
-connection.query(
-    'SELECT * FROM users',
-    function(err, results, fields) {
-	console.log(results);
-	console.log(fields);
-    }
-);
+module.exports = connection;
+
+// connection.query(
+//     'SELECT * FROM users',
+//     function(err, results, fields) {
+// 	console.log(results);
+// 	console.log(fields);
+//     }
+// );
 
 /*
 Initial thoughts on constructing SQL queries.
