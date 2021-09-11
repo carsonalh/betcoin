@@ -142,4 +142,8 @@ contract Bookie {
 	function getBet(uint256 id) public view returns (address, address, address, int, int, string memory, uint){
 		return (ledger[id].better1, ledger[id].better2, ledger[id].judge, ledger[id].better1amount, ledger[id].better2amount, ledger[id].description, ledger[id].state);
 	}
+	
+	function getLargestID() public view returns (uint256){
+		return largestID;
+	}
 }
