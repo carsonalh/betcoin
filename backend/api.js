@@ -55,7 +55,7 @@ app.post('/users', (req, res) => {
                                 user: {
                                     id,
                                     email: user.email,
-                                    name,
+                                    name: row.name,
                                     publicKey,
                                     privateKey
                                 }
@@ -77,7 +77,7 @@ app.post('/users', (req, res) => {
                                         user: {
                                             id,
                                             email: user.email,
-                                            name,
+                                            name: name,
                                             publicKey,
                                             privateKey
                                         }
