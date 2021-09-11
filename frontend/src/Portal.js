@@ -56,12 +56,16 @@ class Portal extends React.Component {
                 My public key {this.props.user?.publicKey} <br />
                 {
                     this.state.block
-                    ?
-                    <>
-                    <strong>Hash</strong>: {this.state.block.hash.slice(2)} <br />
-                    <strong>Parent Hash</strong>: {this.state.block.parentHash.slice(2)}
-                    </>
-                    : <p>Loading...</p>
+                        ?
+                        <>
+                            <strong>Hash</strong>: {this.state.block.hash.slice(2)} <br />
+                            <strong>Transaction Hashes</strong>: <br />
+                            <ul>
+                                {this.state.block.transactions.map(t => <li key={t.hash}>{t.hash.slice(2)}</li>)}
+                            </ul>
+                            <strong>Parent Hash</strong>: {this.state.block.parentHash.slice(2)}
+                        </>
+                        : <p>Loading...</p>
                 }
                 {this.state.friends || 'You don\'t have any friends yet.'}
             </div>
