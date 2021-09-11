@@ -229,7 +229,8 @@ app.post('/users/:userId/friends', (req, res) => {
         friends: [{
             email: string,
             name: string,
-            pending: boolean
+            pending: boolean,
+	    publicKey: string
         }]
     }
  */
@@ -237,7 +238,7 @@ app.get('/users/:userId/friends', (req, res) => {
     connection.query(
 `
 (
-SELECT email, name, FALSE AS pending FROM users
+SELECT email, name, privateKey, FALSE AS pending FROM users
 WHERE
 email IN
 (
@@ -248,7 +249,7 @@ SELECT fromEmail AS email FROM friends WHERE toEmail = ?
 )
 UNION
 (
-SELECT email, name, TRUE AS pending FROM users
+SELECT email, name, privateKey, TRUE AS pending FROM users
 WHERE
 email IN
 (
@@ -267,15 +268,21 @@ SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
 	[ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
 	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
 	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-	ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId))],
+	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId))],
 	(err, results, fields) =>
 	{
 	    res
 		.status(200)
 		.json({
 		    friends: results.map(r => {
-			r.pending = !!r.pending;
-			return r;
+			const wallet = new ethers.Wallet('0x' + r.privateKey);
+                        const publicKey = wallet.publicKey.slice(2);
+			return {
+			email: r.email,
+			name: r.name,
+			pending: !!r.pending,
+			publicKey: publicKey
+			};
 		    })
 		})
 	}
