@@ -29,12 +29,10 @@ const ethers = require('ethers');
             privateKey: string, // Hex digest
         }
     }
- */
+*/
+
 app.post('/users', (req, res) => {
     const { user } = req.body;
-    const wallet = ethers.Wallet.createRandom();
-    const publicKey = wallet.publicKey.slice(2);
-    const privateKey = wallet.privateKey.slice(2);
     const passwordHash = ethers.utils.sha256(ethers.utils.toUtf8Bytes(user.password)).slice(2);
     const name = user.name || 'Anonymous';
     const id = ethers.utils.base64.encode(ethers.utils.toUtf8Bytes(user.email));
@@ -49,6 +47,8 @@ app.post('/users', (req, res) => {
                     if (passwordHash !== passwordSha256) {
                         res.status(403).json({ message: 'FAILED' });
                     } else {
+                        const wallet = new ethers.Wallet('0x' + privateKey);
+                        const publicKey = wallet.publicKey.slice(2);
                         res
                             .status(200)
                             .json({
@@ -62,6 +62,9 @@ app.post('/users', (req, res) => {
                             });
                     }
                 } else {
+                    const wallet = ethers.Wallet.createRandom();
+                    const privateKey = wallet.privateKey.slice(2);
+                    const publicKey = wallet.publicKey.slice(2);
                     connection.query(
                         `INSERT INTO users VALUES (?, ?, ?, ?);`,
                         [user.email, name, passwordHash, privateKey],
