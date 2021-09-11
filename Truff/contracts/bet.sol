@@ -41,8 +41,8 @@ contract BetTest {
 	}
 	
 	function agreeToBet(uint id) public{
-		require(msg.sender == better2[id], "Only the recipient can accept the bet!");
 		require(state[id] == 1, "This bet is not in an accepting state!");
+		require(msg.sender == better2[id], "Only the recipient can accept the bet!");
 		if (balances[msg.sender] + baseLine >= amount[id]) {
 			if (balances[better1[id]] + baseLine >= amount[id]) {
 				unchecked {
@@ -62,8 +62,8 @@ contract BetTest {
 	}
 	
 	function adjudicate(uint id, uint decision) public{
-		require(msg.sender == judge[id], "Only the judge can adjudicate the bet!");
 		require(state[id] == 2, "This bet is not in a adjudicating state!");
+		require(msg.sender == judge[id], "Only the judge can adjudicate the bet!");
 		if (decision == 1){
 			unchecked{
 				balances[better1[id]] += 2*amount[id];

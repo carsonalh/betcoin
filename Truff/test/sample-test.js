@@ -174,4 +174,72 @@ describe("BetTest", function () {
 	}
 	expect(error).to.equal(true);
   });
+	
+  it("Should not allow adjudication before the bet proposal is accepted", async function () {
+	const [bank, better1, better2, judge] = await ethers.getSigners();
+	 
+	const id = 0;
+	const baseline = 50;
+	const amount = 50;
+	 
+    const Bet = await ethers.getContractFactory("BetTest");
+    const bet = await Bet.deploy();
+    await bet.deployed();
+
+	await bet.mint(baseline);
+
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount);
+	expect(await bet.getState(id)).to.equal(1);
+	
+	error = false;
+	try{
+		await bet.connect(judge).adjudicate(id, 0);
+	}catch(e){
+		error = true;
+		expect(e.toString().includes("This bet is not in a adjudicating state!")).to.equal(true);
+	}
+	expect(error).to.equal(true);
+  });
+	
+  it("Should not allow adjudication of non-existent bets", async function () {
+	const [bank, better1, better2, judge] = await ethers.getSigners();
+	 
+	const id = 0;
+	const baseline = 50;
+	const amount = 50;
+	 
+    const Bet = await ethers.getContractFactory("BetTest");
+    const bet = await Bet.deploy();
+    await bet.deployed();
+	
+	error = false;
+	try{
+		await bet.connect(judge).adjudicate(100, 0);
+	}catch(e){
+		error = true;
+		expect(e.toString().includes("This bet is not in a adjudicating state!")).to.equal(true);
+	}
+	expect(error).to.equal(true);
+  });
+	
+  it("Should not allow agreement of non-existent bets", async function () {
+	const [bank, better1, better2, judge] = await ethers.getSigners();
+	 
+	const id = 0;
+	const baseline = 50;
+	const amount = 50;
+	 
+    const Bet = await ethers.getContractFactory("BetTest");
+    const bet = await Bet.deploy();
+    await bet.deployed();
+	
+	error = false;
+	try{
+		await bet.connect(better2).agreeToBet(100);
+	}catch(e){
+		error = true;
+		expect(e.toString().includes("This bet is not in an accepting state!")).to.equal(true);
+	}
+	expect(error).to.equal(true);
+  });
 });
