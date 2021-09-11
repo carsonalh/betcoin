@@ -13,6 +13,7 @@ contract BetTest {
 	mapping (uint => address) public judge;
 	mapping (uint => uint) public better1amount;
 	mapping (uint => uint) public better2amount;
+	mapping (uint => string) public description;
 	mapping (uint => uint) public state;
 	
 	event ProposeBet(uint betID, address to);
@@ -30,13 +31,14 @@ contract BetTest {
 		baseLine += _amount;
 	}
 	
-	function makeBet(address _better2, address _judge, uint _better1amount, uint _better2amount) public {
+	function makeBet(address _better2, address _judge, uint _better1amount, uint _better2amount, string memory _description) public {
 		uint id = largestID;
 		better1[id] = msg.sender;
 		better2[id] = _better2;
 		judge[id] = _judge;
 		better1amount[id] = _better1amount;
 		better2amount[id] = _better2amount;
+		description[id] = _description;
 		largestID += 1;
 		state[id] = 1;
 		emit ProposeBet(id, _better2);

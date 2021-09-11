@@ -45,7 +45,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	
 	await bet.connect(better2).agreeToBet(id);
@@ -75,7 +75,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	
 	await bet.connect(better2).agreeToBet(id);
@@ -105,7 +105,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	
 	await bet.connect(better2).agreeToBet(id);
@@ -134,7 +134,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	error = false;
 	try{
@@ -159,7 +159,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	
 	await bet.connect(better2).agreeToBet(id);
@@ -191,7 +191,7 @@ describe("BetTest", function () {
 
 	await bet.mint(baseline);
 
-	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount);
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
 	expect(await bet.getState(id)).to.equal(1);
 	
 	error = false;
