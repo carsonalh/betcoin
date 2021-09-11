@@ -9,11 +9,30 @@ class Portal extends React.Component {
     static CONTRACT_ADDRESS = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
     
     state = {
+        friendEmail: null,
+        friendStatus: null,
         friends: null,
         provider: null,
         block: null,
         balance: null,
         contract: null
+    };
+
+    addFriend = e => {
+        e.preventDefault();
+
+        this.setState({ friendStatus: 'loading' });
+
+        axios
+            .post(`/users/${this.props.user.id}/friends`, {
+                friend: { email: this.state.friendEmail }
+            })
+            .then(res => {
+                this.setState({ friendStatus: 'successful' });
+            })
+            .catch(err => {
+                this.setState({ friendStatus: 'failure' });
+            });
     };
 
     initializeBlockChain = async () => {
@@ -77,6 +96,19 @@ class Portal extends React.Component {
                         </>
                         : <p>Loading...</p>
                 }
+                <h3>Add Friend</h3>
+                <form onSubmit={this.addFriend}>
+                    <input
+                        type="email"
+                        value={this.state.friendEmail}
+                        onChange={e => this.setState({ friendEmail: e.target.value })}
+                    />
+                    <input
+                        type="submit"
+                        value="Add Friend"
+                    />
+                </form>
+                {this.state.friendStatus}
                 {this.state.friends || 'You don\'t have any friends yet.'}
             </div>
         );
