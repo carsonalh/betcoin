@@ -112,10 +112,12 @@ app.post('/users', (req, res) => {
         friend: {
             email: string,
             name: string,
-            pending: boolean
+            pending: boolean,
+	    publicKey: string
         }
     }
- */
+*/
+
 app.post('/users/:userId/friends', (req, res) => {
     const email = ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId));
     const { friend } = req.body;
@@ -129,89 +131,99 @@ app.post('/users/:userId/friends', (req, res) => {
     }
 
     console.log('FRIEND REQUEST', email, friend.email);
-
-    // Add the friendship if it does not exist
     connection.query(
-        'INSERT INTO friends VALUES (?, ?);',
-        [email, friend.email],
-        (err, results, fields) => {
-            if (!err || (err && err.code === 'ER_DUP_ENTRY')) {
-                // Check if the reverse relationship exists
-                connection.query(
-                    `SELECT users.name as \`friendName\`, friends.fromEmail, friends.toEmail
+	'SELECT privateKey FROM users WHERE email = ?',
+	[friend.email],
+	(err, results, fields) => {
+	    const wallet = new ethers.Wallet('0x' + results[0].privateKey);
+	    const publicKey = wallet.publicKey.slice(2);
+	        // Add the friendship if it does not exist
+	    connection.query(
+		'INSERT INTO friends VALUES (?, ?);',
+		[email, friend.email],
+		(err, results, fields) => {
+		    if (!err || (err && err.code === 'ER_DUP_ENTRY')) {
+			// Check if the reverse relationship exists
+			connection.query(
+			    `SELECT users.name as \`friendName\`, friends.fromEmail, friends.toEmail
                     FROM friends
                         JOIN users ON users.email = friends.fromEmail
                     WHERE fromEmail = ? AND toEmail = ?`,
-                    [friend.email, email],
-                    (err, results, fields) => {
-                        if (!err) {
-                            if (results.length) {
-                                // Accepting a friend request
-                                const row = results[0];
-                                res
-                                    .status(200)
-                                    .json({
-                                        friend: {
-                                            email: friend.email,
-                                            name: row.friendName,
-                                            pending: false
-                                        }
-                                    });
-                            } else {
-                                // Making a friend request
-                                connection.query(
-                                    `SELECT users.name AS \`friendName\` FROM users WHERE users.email = ?`,
-                                    [friend.email],
-                                    (err, results, fields) => {
-                                        if (!err) {
-                                            if (results.length) {
-                                                // The friend actually exists
-                                                const row = results[0];
-                                                res
-                                                    .status(200)
-                                                    .json({
-                                                        friend: {
-                                                            email: friend.email,
-                                                            name: row.friendName,
-                                                            pending: true
-                                                        }
-                                                    });
-                                            } else {
-                                                // They don't
-                                                res
-                                                    .status(300)
-                                                    .json({
-                                                        message: 'The friend does not exist'
-                                                    });
-                                            }
-                                        } else {
-                                            res
-                                                .status(500)
-                                                .json({
-                                                    message: 'Database error'
-                                                });
-                                        }
-                                    }
-                                );
-                            }
-                        } else {
-                            res
-                                .status(500)
-                                .json({
-                                    message: 'Database error'
-                                });
-                        }
-                    }
-                );
-            } else {
-                res
-                    .status(500)
-                    .json({
-                        message: 'Database error'
-                    });
-            }
-        }
-    );
+			    [friend.email, email],
+			    (err, results, fields) => {
+				if (!err) {
+				    if (results.length) {
+					// Accepting a friend request
+					const row = results[0];
+					res
+					    .status(200)
+					    .json({
+						friend: {
+						    email: friend.email,
+						    name: row.friendName,
+						    pending: false,
+						    publicKey: publicKey
+						}
+					    });
+				    } else {
+					// Making a friend request
+					connection.query(
+					    `SELECT users.name AS \`friendName\` FROM users WHERE users.email = ?`,
+					    [friend.email],
+					    (err, results, fields) => {
+						if (!err) {
+						    if (results.length) {
+							// The friend actually exists
+							const row = results[0];
+							res
+							    .status(200)
+							    .json({
+								friend: {
+								    email: friend.email,
+								    name: row.friendName,
+								    pending: true,
+								    publicKey: publicKey
+								}
+							    });
+						    } else {
+							// They don't
+							res
+							    .status(300)
+							    .json({
+								message: 'The friend does not exist'
+							    });
+						    }
+						} else {
+						    res
+							.status(500)
+							.json({
+							    message: 'Database error'
+							});
+						}
+					    }
+					);
+				    }
+				} else {
+				    res
+					.status(500)
+					.json({
+					    message: 'Database error'
+					});
+				}
+			    }
+			);
+		    } else {
+			res
+			    .status(500)
+			    .json({
+				message: 'Database error'
+			    });
+		    }
+		}
+	    );
+
+	}
+    )
 });
 
 /*
