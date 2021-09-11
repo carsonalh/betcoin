@@ -1,7 +1,9 @@
 {
   "name": "hardhat-project",
   "scripts": {
-    "test": "npx hardhat test"
+    "start": "npx hardhat node",
+	"contract": "npx hardhat run scripts/script.js --network localhost",
+	"test": "npx hardhat test"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
