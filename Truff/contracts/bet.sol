@@ -11,7 +11,8 @@ contract BetTest {
 	mapping (uint => address) public better1;
 	mapping (uint => address) public better2;
 	mapping (uint => address) public judge;
-	mapping (uint => uint) public amount;
+	mapping (uint => uint) public better1amount;
+	mapping (uint => uint) public better2amount;
 	mapping (uint => uint) public state;
 	
 	event ProposeBet(uint betID, address to);
@@ -29,12 +30,13 @@ contract BetTest {
 		baseLine += _amount;
 	}
 	
-	function makeBet(address _better2, address _judge, uint _amount) public {
+	function makeBet(address _better2, address _judge, uint _better1amount, uint _better2amount) public {
 		uint id = largestID;
 		better1[id] = msg.sender;
 		better2[id] = _better2;
 		judge[id] = _judge;
-		amount[id] = _amount;
+		better1amount[id] = _better1amount;
+		better2amount[id] = _better2amount;
 		largestID += 1;
 		state[id] = 1;
 		emit ProposeBet(id, _better2);
@@ -43,11 +45,11 @@ contract BetTest {
 	function agreeToBet(uint id) public{
 		require(state[id] == 1, "This bet is not in an accepting state!");
 		require(msg.sender == better2[id], "Only the recipient can accept the bet!");
-		if (balances[msg.sender] + baseLine >= amount[id]) {
-			if (balances[better1[id]] + baseLine >= amount[id]) {
+		if (balances[msg.sender] + baseLine >= better1amount[id]) {
+			if (balances[better1[id]] + baseLine >= better2amount[id]) {
 				unchecked {
-					balances[better1[id]] -= amount[id];
-					balances[msg.sender] -= amount[id];
+					balances[better1[id]] -= better1amount[id];
+					balances[msg.sender] -= better2amount[id];
 				}
 				state[id] = 2;
 				emit BetAgreedTo(id, judge[id]);
@@ -66,16 +68,16 @@ contract BetTest {
 		require(msg.sender == judge[id], "Only the judge can adjudicate the bet!");
 		if (decision == 1){
 			unchecked{
-				balances[better1[id]] += 2*amount[id];
+				balances[better1[id]] += better1amount[id] + better2amount[id];
 			}
 		} else if (decision == 2) {
 			unchecked{
-				balances[better2[id]] += 2*amount[id];
+				balances[better2[id]] += better1amount[id] + better2amount[id];
 			}
 		} else {
 			unchecked{
-				balances[better1[id]] += amount[id];
-				balances[better2[id]] += amount[id];
+				balances[better1[id]] += better1amount[id];
+				balances[better2[id]] += better2amount[id];
 			}
 		}
 		state[id] = 3;
