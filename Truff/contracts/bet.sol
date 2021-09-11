@@ -25,7 +25,7 @@ contract BetTest {
     }
 	
 	function mint(uint _amount) public {
-		require(msg.sender == bank);
+		require(msg.sender == bank, "Only the bank can mint!");
 		baseLine += _amount;
 	}
 	
@@ -41,8 +41,8 @@ contract BetTest {
 	}
 	
 	function agreeToBet(uint id) public{
-		require(msg.sender == better2[id]);
-		require(state[id] == 1);
+		require(msg.sender == better2[id], "Only the recipient can accept the bet!");
+		require(state[id] == 1, "This bet is not in an accepting state!");
 		if (balances[msg.sender] + baseLine >= amount[id]) {
 			if (balances[better1[id]] + baseLine >= amount[id]) {
 				unchecked {
@@ -62,24 +62,21 @@ contract BetTest {
 	}
 	
 	function adjudicate(uint id, uint decision) public{
-		require(msg.sender == judge[id]);
-		require(state[id] == 2);
+		require(msg.sender == judge[id], "Only the judge can adjudicate the bet!");
+		require(state[id] == 2, "This bet is not in a adjudicating state!");
 		if (decision == 1){
 			unchecked{
 				balances[better1[id]] += 2*amount[id];
 			}
-			console.log("Auditors decision is better1");
 		} else if (decision == 2) {
 			unchecked{
 				balances[better2[id]] += 2*amount[id];
 			}
-			console.log("Auditors decision is better2");
 		} else {
 			unchecked{
 				balances[better1[id]] += amount[id];
 				balances[better2[id]] += amount[id];
 			}
-			console.log("Auditors decision is undecided (all money back)");
 		}
 		state[id] = 3;
 		emit Adjudicated(id);

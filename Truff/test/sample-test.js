@@ -117,74 +117,61 @@ describe("BetTest", function () {
 	expect(await bet.connect(better2).getBalance()).to.equal(baseline);
 	
   });
-  
-  /*it("Should make a bet with adjudication for better1", async function () {
-	const [b1, b2, a] = await ethers.getSigners();
+	
+  it("Should not allow a thief to accept someone else's bet", async function () {
+	const [bank, better1, better2, judge, thief] = await ethers.getSigners();
+	 
+	const id = 0;
+	const baseline = 50;
+	const amount = 50;
 	 
     const Bet = await ethers.getContractFactory("BetTest");
-    const bet = await Bet.deploy(b2.address, a.address, 100);
+    const bet = await Bet.deploy();
     await bet.deployed();
 
-	expect(await bet.states()).to.equal(1);
-	await bet.connect(b2).agreeToBet();
-	expect(await bet.states()).to.equal(2);
-	
-	
-	await bet.connect(a).adjudicate(0);
-	expect(await bet.states()).to.equal(3);
-	
-  });*/
-});
+	await bet.mint(baseline);
 
-/*describe("BetTest", function () {
-  it("Should make a bet with adjudication false", async function () {
-	const [b1, b2, a] = await ethers.getSigners();
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount);
+	expect(await bet.getState(id)).to.equal(1);
+	error = false;
+	try{
+		await bet.connect(thief).agreeToBet(id);
+	}catch(e){
+		error = true;
+		expect(e.toString().includes("Only the recipient can accept the bet!")).to.equal(true);
+	}
+	expect(error).to.equal(true);
+  });
+	
+  it("Should not allow a thief to adjudicate someone else's bet", async function () {
+	const [bank, better1, better2, judge, thief] = await ethers.getSigners();
+	 
+	const id = 0;
+	const baseline = 50;
+	const amount = 50;
 	 
     const Bet = await ethers.getContractFactory("BetTest");
-    const bet = await Bet.deploy(b2.address, a.address, 100);
+    const bet = await Bet.deploy();
     await bet.deployed();
 
-	expect(await bet.states()).to.equal(1);
-	await bet.connect(b2).agreeToBet();
-	expect(await bet.states()).to.equal(2);
+	await bet.mint(baseline);
+
+	await bet.connect(better1).makeBet(better2.address, judge.address, amount);
+	expect(await bet.getState(id)).to.equal(1);
 	
+	await bet.connect(better2).agreeToBet(id);
+	expect(await bet.getState(id)).to.equal(2);
 	
-	await bet.connect(a).adjudicate(0);
-	expect(await bet.states()).to.equal(3);
+	expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount);
+	expect(await bet.connect(better2).getBalance()).to.equal(baseline - amount);
 	
+	error = false;
+	try{
+		await bet.connect(thief).adjudicate(id, 0);
+	}catch(e){
+		error = true;
+		expect(e.toString().includes("Only the judge can adjudicate the bet!")).to.equal(true);
+	}
+	expect(error).to.equal(true);
   });
 });
-
-describe("BetTest", function () {
-  it("Should throw an error due to better2 being unknown", async function () {
-	const [b1, b2, a, theif] = await ethers.getSigners();
-	 
-    const Bet = await ethers.getContractFactory("BetTest");
-    const bet = await Bet.deploy(b2.address, a.address, 100);
-    await bet.deployed();
-
-	expect(await bet.states()).to.equal(1);
-	await bet.connect(theif).agreeToBet();
-	expect(await bet.states()).to.equal(2);
-	
-  });
-});
-
-describe("BetTest", function () {
-  it("Should throw an error due to auditor being unknown", async function () {
-	const [b1, b2, a, theif] = await ethers.getSigners();
-	 
-    const Bet = await ethers.getContractFactory("BetTest");
-    const bet = await Bet.deploy(b2.address, a.address, 100);
-    await bet.deployed();
-
-	expect(await bet.states()).to.equal(1);
-	await bet.connect(b2).agreeToBet();
-	expect(await bet.states()).to.equal(2);
-	
-	
-	await bet.connect(theif).adjudicate(0);
-	expect(await bet.states()).to.equal(3);
-	
-  });
-});*/
