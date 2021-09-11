@@ -20,24 +20,27 @@ const { ethers } = require("hardhat");
 
 describe("BetTest", function () {
   it("Should make a bet with adjudication true", async function () {
-	const [b1, b2, a] = await ethers.getSigners();
+	const [bank, better1, better2, judge] = await ethers.getSigners();
+	 
+	const id = 0;
 	 
     const Bet = await ethers.getContractFactory("BetTest");
-    const bet = await Bet.deploy(b2.address, a.address, 100);
+    const bet = await Bet.deploy();
     await bet.deployed();
 
-	expect(await bet.states()).to.equal(1);
-	await bet.connect(b2).agreeToBet();
-	expect(await bet.states()).to.equal(2);
+	await bet.connect(better1).makeBet(better2.address, judge.address, 100);
+	expect(await bet.getState(id)).to.equal(1);
+	await bet.connect(better2).agreeToBet(id);
+	expect(await bet.getState(id)).to.equal(2);
 	
 	
-	await bet.connect(a).adjudicate(1);
-	expect(await bet.states()).to.equal(3);
+	await bet.connect(judge).adjudicate(id, 1);
+	expect(await bet.getState(id)).to.equal(3);
 	
   });
 });
 
-describe("BetTest", function () {
+/*describe("BetTest", function () {
   it("Should make a bet with adjudication false", async function () {
 	const [b1, b2, a] = await ethers.getSigners();
 	 
@@ -88,4 +91,4 @@ describe("BetTest", function () {
 	expect(await bet.states()).to.equal(3);
 	
   });
-});
+});*/
