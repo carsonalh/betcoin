@@ -1,0 +1,5 @@
+Steps to running project (currently as of 9:30 11/09)
+
+1) "npm start" and wait for the 20 beginning accounts to appear (these will be the same every time). This will start a node on http://localhost:8545 and will show all transactions.
+
+2) "npm run contract" in a new window. This will first run the contract (this is necessary) then run some testing functions to show proof of concept (this is not necessary). This is just a bunch of calls to some of the functions in the library.
