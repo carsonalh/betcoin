@@ -1,6 +1,8 @@
 const express = require('express');
+const api = require('./api');
 const app = express();
 
-app.get('*', (req, res) => res.send('The frontend will be here one day'));
+app.use('/api', api);
+app.use('*', express.static(__dirname + '/dist'));
 
 app.listen(5000, () => console.log('Started the server'));
