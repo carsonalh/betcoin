@@ -55,6 +55,10 @@ class Portal extends React.Component {
     }
 
     componentDidMount() {
+        if (!this.props.user) {
+            return;
+        }
+        
         // http://localhost:8545/ by default
         const provider = new ethers.providers.getDefaultProvider('http://localhost:8545');
         this.setState({ provider });
