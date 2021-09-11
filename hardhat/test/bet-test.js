@@ -1,6 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-
+ 
+const MAX_TIME = 2**40 - 1;
+ 
 describe("Bookie", function () {
     it("Should take money when minted and show it in all accounts", async function () {
         const [bank, person] = await ethers.getSigners();
@@ -12,6 +14,31 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
         expect(await bet.connect(person).getBalance()).to.equal(baseline);
+    });
+
+    it("Should not take a bet of no wager", async function () {
+        const [bank, better1, better2, judge] = await ethers.getSigners();
+
+        const id = 0;
+        const baseline = 50;
+        const amount1 = 0;
+        const amount2 = 0;
+
+        const Bookie = await ethers.getContractFactory("Bookie");
+        const bet = await Bookie.deploy();
+        await bet.deployed();
+
+        await bet.mint(baseline);
+
+        error = false;
+        try {
+			await bet.connect(better1).makeBet(better2.address, judge.address, 0, 0, "Desc", MAX_TIME);
+        } catch (e) {
+            error = true;
+            expect(e.toString().includes("A positive amount is needed to bet!")).to.equal(true);
+        }
+        expect(error).to.equal(true);
+
     });
 
     it("Should take a bet with adjudication for better 1, transferring funds", async function () {
@@ -28,7 +55,7 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
 
         await bet.connect(better2).agreeToBet(id);
@@ -58,10 +85,11 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
 
-        await bet.connect(better2).agreeToBet(id);
+        //expect(await bet.connect(better2).agreeToBet(id)).to.emit("BetAgreedTo").withArgs(2, judge);
+		await bet.connect(better2).agreeToBet(id);
         expect(await bet.getState(id)).to.equal(2);
 
         expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1);
@@ -71,6 +99,8 @@ describe("Bookie", function () {
         expect(await bet.getState(id)).to.equal(3);
         expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1);
         expect(await bet.connect(better2).getBalance()).to.equal(baseline + amount1);
+		
+		
 
     });
 
@@ -88,7 +118,7 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
 
         await bet.connect(better2).agreeToBet(id);
@@ -120,10 +150,10 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id1)).to.equal(1);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id2)).to.equal(1);
 
         await bet.connect(better2).agreeToBet(id1);
@@ -131,7 +161,7 @@ describe("Bookie", function () {
         expect(await bet.connect(better1).getBalance()).to.equal(baseline - amount1);
         expect(await bet.connect(better2).getBalance()).to.equal(baseline - amount2);
 		
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount1, amount2, "Desc", MAX_TIME);
         expect(await bet.getState(id3)).to.equal(1);
 
         await bet.connect(better2).agreeToBet(id2);
@@ -161,6 +191,31 @@ describe("Bookie", function () {
 
     });
 
+    it("Should not allow a refund early", async function () {
+        const [bank, better1, better2, judge] = await ethers.getSigners();
+
+        const id = 0;
+        const baseline = 50;
+        const amount = 50;
+
+        const Bookie = await ethers.getContractFactory("Bookie");
+        const bet = await Bookie.deploy();
+        await bet.deployed();
+
+        await bet.mint(baseline);
+
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc", MAX_TIME);
+        expect(await bet.getState(id)).to.equal(1);
+        error = false;
+        try {
+            await bet.connect(better2).getTimeoutRefund(id);
+        } catch (e) {
+            error = true;
+            expect(e.toString().includes("It is too early to refund!")).to.equal(true);
+        }
+        expect(error).to.equal(true);
+    });
+
     it("Should not allow a thief to accept someone else's bet", async function () {
         const [bank, better1, better2, judge, thief] = await ethers.getSigners();
 
@@ -174,7 +229,7 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
         error = false;
         try {
@@ -199,7 +254,7 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
 
         await bet.connect(better2).agreeToBet(id);
@@ -231,7 +286,7 @@ describe("Bookie", function () {
 
         await bet.mint(baseline);
 
-        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc");
+        await bet.connect(better1).makeBet(better2.address, judge.address, amount, amount, "Desc", MAX_TIME);
         expect(await bet.getState(id)).to.equal(1);
 
         error = false;
