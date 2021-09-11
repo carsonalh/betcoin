@@ -545,6 +545,10 @@ async function main() {
 	 
 	 // You also have getBet()
 	 console.log(await contract.getBet(betID));
+
+	 for (const address of require('./addresses')) {
+		 // From Pub(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266) send 0.1 ETH to `address`
+	 }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
