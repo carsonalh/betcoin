@@ -1,4 +1,6 @@
 const app = require('express').Router();
+const connection = require('./database');
+const ethers = require('ethers');
 
 /*
     Used to create a new user and get user data. If the user already exists,
@@ -29,18 +31,65 @@ const app = require('express').Router();
     }
  */
 app.post('/users', (req, res) => {
-    const body = req.body;
-    res
-        .status(200)
-        .json({
-            user: {
-                id: 'dGVzdEBleGFtcGxlLmNvbQ==',
-                email: 'test@example.com',
-                name: 'Test User',
-                publicKey: 'FAKE_PUB_KEY',
-                privateKey: 'FAKE_PRIV_KEY'
+    const { user } = req.body;
+    const wallet = ethers.Wallet.createRandom();
+    const publicKey = wallet.publicKey.slice(2);
+    const privateKey = wallet.privateKey.slice(2);
+    const passwordHash = ethers.utils.sha256(ethers.utils.toUtf8Bytes(user.password)).slice(2);
+    const name = user.name || 'Anonymous';
+    const id = ethers.utils.base64.encode(ethers.utils.toUtf8Bytes(user.email));
+    connection.query(
+        'SELECT * FROM users WHERE users.email = ?',
+        [user.email],
+        (err, results, fields) => {
+            if (!err) {
+                if (results.length) {
+                    const row = results[0];
+                    const { passwordSha256, privateKey } = row;
+                    if (passwordHash !== passwordSha256) {
+                        res.status(403).json({ message: 'FAILED' });
+                    } else {
+                        res
+                            .status(200)
+                            .json({
+                                user: {
+                                    id,
+                                    email: user.email,
+                                    name,
+                                    publicKey,
+                                    privateKey
+                                }
+                            });
+                    }
+                } else {
+                    connection.query(
+                        `INSERT INTO users VALUES (?, ?, ?, ?);`,
+                        [user.email, name, passwordHash, privateKey],
+                        (err, results, fields) => {
+                            // Put the response here...
+                            if (!err) {
+                                res
+                                    .status(200)
+                                    .json({
+                                        user: {
+                                            id,
+                                            email: user.email,
+                                            name,
+                                            publicKey,
+                                            privateKey
+                                        }
+                                    })
+                            } else {
+                                res.status(500).json({ message: 'FAILED' });
+                            }
+                        }
+                    );
+                }
+            } else {
+                res.status(500).json({ message: 'FAILED' });
             }
-        });
+        }
+    );
 });
 
 /*
@@ -65,7 +114,7 @@ app.post('/users', (req, res) => {
     }
  */
 app.post('/users/:userId/friends', (req, res) => {
-    req.params.userId
+    // req.params.userId
     res
         .status(200)
         .json({
