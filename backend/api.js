@@ -29,6 +29,7 @@ const app = require('express').Router();
     }
  */
 app.post('/users', (req, res) => {
+    const body = req.body;
     res
         .status(200)
         .json({
@@ -64,6 +65,7 @@ app.post('/users', (req, res) => {
     }
  */
 app.post('/users/:userId/friends', (req, res) => {
+    req.params.userId
     res
         .status(200)
         .json({
