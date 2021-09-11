@@ -3,12 +3,17 @@ import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 import axios from './axios-instance';
 import { ethers } from 'ethers';
+import abi from './abi';
 
 class Portal extends React.Component {
+    static CONTRACT_ADDRESS = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
+    
     state = {
         friends: null,
         provider: null,
-        block: null
+        block: null,
+        balance: null,
+        contract: null
     };
 
     initializeBlockChain = async () => {
@@ -17,7 +22,11 @@ class Portal extends React.Component {
         const { provider } = this.state;
         const blockNumber = await provider.getBlockNumber();
         const block = await provider.getBlockWithTransactions(blockNumber);
-        this.setState({ block });
+        const wallet = new ethers.Wallet(this.props.user.privateKey, provider);
+        const contract = new ethers.Contract(Portal.CONTRACT_ADDRESS, abi, wallet);
+        const balance = await contract.getBalance();
+        const numberBalance = Number.parseInt(balance._hex, 16);
+        this.setState({ block, contract, balance: numberBalance });
     };
 
     componentDidUpdate(prevProps, prevState) {
@@ -28,7 +37,7 @@ class Portal extends React.Component {
 
     componentDidMount() {
         // http://localhost:8545/ by default
-        const provider = new ethers.providers.JsonRpcProvider();
+        const provider = new ethers.providers.getDefaultProvider('http://localhost:8545');
         this.setState({ provider });
 
         axios
@@ -54,6 +63,7 @@ class Portal extends React.Component {
                 {redirect}
                 Signed in as {this.props.user?.name} <br />
                 My public key {this.props.user?.publicKey} <br />
+                My balance is {this.state.balance || 'loading'} <br />
                 {
                     this.state.block
                         ?
