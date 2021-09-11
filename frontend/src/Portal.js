@@ -9,15 +9,58 @@ class Portal extends React.Component {
     static CONTRACT_ADDRESS = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
     
     state = {
-        friendEmail: null,
+        friendEmail: '',
         friendStatus: null,
         friends: null,
         provider: null,
         block: null,
         balance: null,
-        contract: null
+        contract: null,
+        betWithEmail: '',
+        betWithJudge: '',
+        betDescription: '',
+        betAmount: null,
+        betOtherAmount: null,
+        error: null,
     };
 
+    getPublicKeyFromEmail = email => {
+        console.dir(this.state.friends);
+        for (const friend of this.state.friends) {
+            if (friend.email === email) {
+                return friend.publicKey;
+            }
+        }
+
+        this.setState({ error: 'Not friends with user with email ' + email });
+
+        throw new Error('User not found');
+    };
+
+    submitBet = async e => {
+        e.preventDefault();
+
+        // TODO
+        if (!this.state.contract) {
+            return;
+        }
+
+        const { contract } = this.state;
+
+        try {
+            const toAddress = ethers.utils.computeAddress('0x' + this.getPublicKeyFromEmail(this.state.betWithEmail));
+            const judgeAddress = ethers.utils.computeAddress('0x' + this.getPublicKeyFromEmail(this.state.betWithJudge));
+            const ourBet = this.state.betAmount;
+            const theirBet = this.state.betOtherAmount;
+            const description = this.state.betDescription;
+            const TIMEOUT = 2 ** 40;
+            console.log(toAddress, judgeAddress, ourBet, theirBet, description, TIMEOUT);
+            await contract.makeBet(toAddress, judgeAddress, ourBet, theirBet, description, TIMEOUT);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+    
     addFriend = e => {
         e.preventDefault();
 
@@ -67,20 +110,19 @@ class Portal extends React.Component {
             .get(`/users/${this.props.user.id}/friends`)
             .then(res => {
                 const { friends } = res.data;
-                this.setState({
-                    friends:
-                        <ul>
-                            <h3>Friends</h3>
-                            {friends.map(
-                                f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
-                            )}
-                        </ul>
-                });
+                this.setState({ friends });
             });
     }
     
     render() {
         const redirect = this.props.user ? null : <Redirect to="/" />;
+        const friends =
+            <ul>
+                <h3>Friends</h3>
+                {this.state.friends?.map(
+                    f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
+                )}
+            </ul>;
         return (
             <div className="Portal">
                 {redirect}
@@ -113,7 +155,17 @@ class Portal extends React.Component {
                     />
                 </form>
                 {this.state.friendStatus}
-                {this.state.friends || 'You don\'t have any friends yet.'}
+                {friends || 'You don\'t have any friends yet.'}
+                <h3>Create a Bet</h3>
+                {this.state.error}
+                <form onSubmit={this.submitBet}>
+                    <input type="email" placeholder="With? (email)" value={this.state.betWithEmail} onChange={e => this.setState({ betWithEmail: e.target.value })} />
+                    <input type="email" placeholder="Judge Email" value={this.state.betWithJudge} onChange={e => this.setState({ betWithJudge: e.target.value })} />
+                    <input type="number" placeholder="Amount" value={this.state.betAmount} onChange={e => this.setState({ betAmount: e.target.value })} />
+                    <input type="number" placeholder="Their Amount" value={this.state.betOtherAmount} onChange={e => this.setState({ betOtherAmount: e.target.value })} />
+                    <input type="text" placeholder="Description..." value={this.state.betDescription} onChange={e => this.setState({ betDescription: e.target.value })} />
+                    <input type="submit" value="Create Bet!" />
+                </form>
             </div>
         );
     }
