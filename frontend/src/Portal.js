@@ -1,9 +1,17 @@
 import React from 'react';
+import { connect } from 'react-redux';
 
 class Portal extends React.Component {
     render() {
-        return <p>Portal</p>;
+        return (
+            <div className="Portal">
+                Signed in as {this.props.user.name} <br />
+                My public key {this.props.user.publicKey}
+            </div>
+        );
     }
 }
 
-export default Portal;
+const mapStateToProps = state => ({ user: { ...state.user } });
+
+export default connect(mapStateToProps, null)(Portal);
