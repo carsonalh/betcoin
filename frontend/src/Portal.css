@@ -1,0 +1,72 @@
+.Portal .refresh {
+    background-color: #3B5CAE;
+    color: white;
+    border: none;
+    padding: .5rem 1.5rem;
+    border-radius: 3px;
+    display: block;
+    font-family: 'Montserrat';
+    font-size: 1em;
+}
+
+.Portal {
+    max-width: 800px;;
+    margin: 0 auto;
+}
+
+.Portal h2 {
+    display: block;
+    font-family: 'Montserrat';
+}
+
+.Portal h3 {
+    color: #373737;
+    font-family: 'Montserrat';
+}
+
+.Portal .balance {
+    font-family: 'Roboto';
+    font-weight: 300;
+    font-size: 3.5em;
+}
+
+.Portal .key {
+    font-family: 'Consolas';
+    color: #313131;
+}
+
+.Portal h4 {
+    font-family: 'Roboto';
+    color: #626262;
+    margin-top: .8rem;
+}
+
+.Portal ul.friends {
+    padding: 0;
+    list-style-type: none;
+}
+
+.Portal .friends li {
+    font-family: 'Roboto';
+    font-weight: 500;
+    color: #565656;
+}
+
+.Portal .friends .pending {
+    color: #C6C7D3;
+}
+
+.Portal input {
+    background-color: #F3F3F3;
+    border: none;
+    border-radius: 3px;
+    padding: .3rem .7rem;
+    font-family: 'Roboto';
+    font-weight: 500;
+    font-size: 1em;
+}
+
+.Portal input[type="submit"] {
+    background-color: #3B5CAE;
+    color: white;
+}

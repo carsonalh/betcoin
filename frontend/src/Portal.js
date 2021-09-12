@@ -5,6 +5,8 @@ import axios from './axios-instance';
 import { ethers } from 'ethers';
 import abi from './abi';
 
+import "./Portal.css";
+
 class Portal extends React.Component {
     static CONTRACT_ADDRESS = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
 
@@ -221,13 +223,9 @@ class Portal extends React.Component {
 
     render() {
         const redirect = this.props.user ? null : <Redirect to="/" />;
-        const friends =
-            <ul>
-                <h3>Friends</h3>
-                {this.state.friends?.map(
-                    f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
-                )}
-            </ul>;
+        const friends = this.state.friends?.map(
+            f => <li key={f.email} className={f.pending && "pending"}>{f.name} -- {f.email}{f.pending && ' (Pending)'}</li>
+        );
         const pendingBets =
             <ul>
                 <h3>Pending Bets</h3>
@@ -263,53 +261,74 @@ class Portal extends React.Component {
                     </li>
                 )}
             </ul>;
+
         return (
-            <div className="Portal">
-                {redirect}
-                <button onClick={this.refresh}>Refresh</button>
-                Signed in as {this.props.user?.name} <br />
-                My public key {this.props.user?.publicKey} <br />
-                My balance is {this.state.balance || 'loading'} <br />
-                {
-                    this.state.block
-                        ?
-                        <>
-                            <strong>Hash</strong>: {this.state.block.hash.slice(2)} <br />
-                            <strong>Transaction Hashes</strong>: <br />
-                            <ul>
-                                {this.state.block.transactions.map(t => <li key={t.hash}>{t.hash.slice(2)}</li>)}
-                            </ul>
-                            <strong>Parent Hash</strong>: {this.state.block.parentHash.slice(2)}
-                        </>
-                        : <p>Loading...</p>
-                }
-                <h3>Add Friend</h3>
-                <form onSubmit={this.addFriend}>
-                    <input
-                        type="email"
-                        value={this.state.friendEmail}
-                        onChange={e => this.setState({ friendEmail: e.target.value })}
-                    />
-                    <input
-                        type="submit"
-                        value="Add Friend"
-                    />
-                </form>
-                {this.state.friendStatus}
-                {friends || 'You don\'t have any friends yet.'}
-                {pendingBets || 'No bets pending'}
-                {pendingJudgements || 'No judgements pending'}
-                <h3>Create a Bet</h3>
-                {this.state.error}
-                <form onSubmit={this.submitBet}>
-                    <input type="email" placeholder="With? (email)" value={this.state.betWithEmail} onChange={e => this.setState({ betWithEmail: e.target.value })} />
-                    <input type="email" placeholder="Judge Email" value={this.state.betWithJudge} onChange={e => this.setState({ betWithJudge: e.target.value })} />
-                    <input type="number" placeholder="Amount" value={this.state.betAmount} onChange={e => this.setState({ betAmount: e.target.value })} />
-                    <input type="number" placeholder="Their Amount" value={this.state.betOtherAmount} onChange={e => this.setState({ betOtherAmount: e.target.value })} />
-                    <input type="text" placeholder="Description..." value={this.state.betDescription} onChange={e => this.setState({ betDescription: e.target.value })} />
-                    <input type="submit" value="Create Bet!" />
-                </form>
-            </div>
+            <>
+                <div className="Menu">
+                    <div className="logo">
+                        <h1>Betcoin</h1>
+                    </div>
+                    <a href="#">Signed in as {this.props.user?.name}</a>
+                </div>
+                <div className="Portal">
+                    {redirect}
+                    <button className="refresh" onClick={this.refresh}>Refresh</button>
+                    <h3>Balance</h3>
+                    <span className="balance">{this.state.balance && this.state.balance + ' BC' || 'loading'}</span>
+                    <h3>My Public Key</h3>
+                    <span className="key">{this.props.user?.publicKey && this.props.user.publicKey.slice(0, 30) + '...'}</span>
+                    <h3>Friends</h3>
+                    <ul className="friends">
+                    {friends?.length
+                        ? friends
+                        : <li>You do not have any friends yet</li>}
+                    </ul>
+                    <form onSubmit={this.addFriend}>
+                        <input
+                            type="email"
+                            placeholder="Email..."
+                            value={this.state.friendEmail}
+                            onChange={e => this.setState({ friendEmail: e.target.value })}
+                        />
+                        <input
+                            type="submit"
+                            value="Add"
+                        />
+                    </form>
+                    <h2>Incoming</h2>
+                    {pendingBets || 'No bets pending'}
+                    {pendingJudgements || 'No judgements pending'}
+                    <h2>New Bet</h2>
+                    <form onSubmit={this.submitBet}>
+                        <input type="email" placeholder="With? (email)" value={this.state.betWithEmail} onChange={e => this.setState({ betWithEmail: e.target.value })} />
+                        <input type="email" placeholder="Judge Email" value={this.state.betWithJudge} onChange={e => this.setState({ betWithJudge: e.target.value })} />
+                        <input type="number" placeholder="Amount" value={this.state.betAmount} onChange={e => this.setState({ betAmount: e.target.value })} />
+                        <input type="number" placeholder="Their Amount" value={this.state.betOtherAmount} onChange={e => this.setState({ betOtherAmount: e.target.value })} />
+                        <input type="text" placeholder="Description..." value={this.state.betDescription} onChange={e => this.setState({ betDescription: e.target.value })} />
+                        <input type="submit" value="Create Bet!" />
+                    </form>
+                    <h2>Most Recent Block</h2>
+                    {
+                        this.state.block
+                            ?
+                            <>
+                                <h4>Hash</h4>
+                                <span className="key">{this.state.block.hash.slice(2)}</span>
+                                <h4>Parent Hash</h4>
+                                <span className="key">{this.state.block.parentHash.slice(2)}</span>
+                                <h4>Last Transaction</h4>
+                                <span className="key">{
+                                    this.state.block.transactions.length
+                                    ? this.state.block.transactions[this.state.block.transactions.length - 1].hash
+                                    : 'No hashes in block yet'
+                                }</span>
+                            </>
+                            : <p>Loading...</p>
+                    }
+                    {this.state.friendStatus}
+                    {this.state.error}
+                </div>
+            </>
         );
     }
 }
