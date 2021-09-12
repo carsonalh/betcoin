@@ -265,14 +265,15 @@ class Portal extends React.Component {
                 <h3>Pending Judgements</h3>
                 {this.state.bets?.filter(b => b.judgeid == this.state.address && b.state == 2
                 ).map(
-                    b => <li key={b.id}> Party 1:{b.better1id}, Party 2:{b.better2id}, desc:{b.description}
+                    b => <li key={b.id}>
+                        {this.getNameFromAddress(b.better1id)} v. {this.getNameFromAddress(b.better2id)} : {b.description}
                         <form onSubmit={(e) =>
                             this.acceptJudgement(e, b.id)}>
-                            <input type="submit" value="Party 1" />
+                            <input type="submit" value={this.getNameFromAddress(b.better1id)} />
                         </form>
                         <form onSubmit={(e) =>
                             this.rejectJudgement(e, b.id)}>
-                            <input type="submit" value="Party 2" />
+                            <input type="submit" value={this.getNameFromAddress(b.better2id)} />
                         </form>
                     </li>
                 )}
