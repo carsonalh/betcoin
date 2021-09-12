@@ -22,6 +22,7 @@ class Portal extends React.Component {
         betAmount: null,
         betOtherAmount: null,
         error: null,
+        bets: []
     };
 
     getPublicKeyFromEmail = email => {
@@ -88,7 +89,14 @@ class Portal extends React.Component {
         const contract = new ethers.Contract(Portal.CONTRACT_ADDRESS, abi, wallet);
         const balance = await contract.getBalance();
         const numberBalance = Number.parseInt(balance._hex, 16);
-        this.setState({ block, contract, balance: numberBalance });
+        const bets = [];
+        const numBets = await contract.getLargestID();
+        for (let i = 0; i < numBets; ++i) {
+            bets.push(
+                await contract.getBet(i)
+            );
+        }
+        this.setState({ bets, block, contract, balance: numberBalance });
     };
 
     componentDidUpdate(prevProps, prevState) {
