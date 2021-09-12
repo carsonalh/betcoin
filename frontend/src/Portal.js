@@ -36,6 +36,20 @@ class Portal extends React.Component {
             return;
 
         await this.intializeUserState();
+        
+        axios
+            .get(`/users/${this.props.user.id}/friends`)
+            .then(res => {
+                const friends = res.data.friends.map(friend => {
+                    const { publicKey } = friend;
+                    console.log('publicKey', publicKey);
+                    friend.address = ethers.utils.computeAddress('0x' + publicKey);
+                    return { ...friend };
+                });
+                console.dir(friends);
+
+                this.setState({ friends });
+            });
     };
 
     getPublicKeyFromEmail = email => {
@@ -242,11 +256,7 @@ class Portal extends React.Component {
         const friends = this.state.friends?.map(
             f => <li key={f.email} className={f.pending && "pending"}>{f.name} -- {f.email}{f.pending && ' (Pending)'}</li>
         );
-        const pendingBets =
-            <ul>
-                <h3>Pending Bets</h3>
-                {this.state.bets?.filter(b => b.better2id == this.state.address && b.state == 1
-                ).map(
+        const pendingBets = this.state.bets?.filter(b => b.better2id == this.state.address && b.state == 1).map(
                     b => <li key={b.id}>From:{this.getNameFromAddress(b.better1id)}, with judge:{this.getNameFromAddress(b.judgeid)}, desc:{b.description}, Them: {b.better1amount} BC You: {b.better2amount} BC
                         <form onSubmit={(e) =>
                             this.acceptBet(e, b.id)}>
@@ -258,26 +268,20 @@ class Portal extends React.Component {
                         </form>
 
                     </li>
-                )}
-            </ul>;
-        const pendingJudgements =
-            <ul>
-                <h3>Pending Judgements</h3>
-                {this.state.bets?.filter(b => b.judgeid == this.state.address && b.state == 2
-                ).map(
-                    b => <li key={b.id}>
-                        {this.getNameFromAddress(b.better1id)} v. {this.getNameFromAddress(b.better2id)} : {b.description}
-                        <form onSubmit={(e) =>
-                            this.acceptJudgement(e, b.id)}>
-                            <input type="submit" value={this.getNameFromAddress(b.better1id)} />
-                        </form>
-                        <form onSubmit={(e) =>
-                            this.rejectJudgement(e, b.id)}>
-                            <input type="submit" value={this.getNameFromAddress(b.better2id)} />
-                        </form>
-                    </li>
-                )}
-            </ul>;
+                );
+        const pendingJudgements = this.state.bets?.filter(b => b.judgeid == this.state.address && b.state == 2).map(
+            b => <li key={b.id}>
+                {this.getNameFromAddress(b.better1id)} v. {this.getNameFromAddress(b.better2id)} : {b.description}
+                <form onSubmit={(e) =>
+                    this.acceptJudgement(e, b.id)}>
+                    <input type="submit" value={this.getNameFromAddress(b.better1id)} />
+                </form>
+                <form onSubmit={(e) =>
+                    this.rejectJudgement(e, b.id)}>
+                    <input type="submit" value={this.getNameFromAddress(b.better2id)} />
+                </form>
+            </li>
+        );
 
         return (
             <>
@@ -313,8 +317,10 @@ class Portal extends React.Component {
                         />
                     </form>
                     <h2>Incoming</h2>
-                    {pendingBets || 'No bets pending'}
-                    {pendingJudgements || 'No judgements pending'}
+                    <ul className="incoming">
+                        {pendingBets || 'No bets pending'}
+                        {pendingJudgements || 'No judgements pending'}
+                    </ul>
                     <h2>New Bet</h2>
                     <form onSubmit={this.submitBet}>
                         <input type="email" placeholder="With? (email)" value={this.state.betWithEmail} onChange={e => this.setState({ betWithEmail: e.target.value })} />
