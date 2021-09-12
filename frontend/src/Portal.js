@@ -50,6 +50,11 @@ class Portal extends React.Component {
 
                 this.setState({ friends });
             });
+
+        const { provider } = this.state;
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlockWithTransactions(blockNumber);
+        this.setState({ block });
     };
 
     getPublicKeyFromEmail = email => {
@@ -298,7 +303,7 @@ class Portal extends React.Component {
                     <span className="balance">{this.state.balance && this.state.balance + ' BC' || 'loading'}</span>
                     <h3>My Public Key</h3>
                     <span className="key">{this.props.user?.publicKey && this.props.user.publicKey.slice(0, 30) + '...'}</span>
-                    <h3>Friends</h3>
+                    <h2>Friends</h2>
                     <ul className="friends">
                     {friends?.length
                         ? friends
@@ -342,7 +347,7 @@ class Portal extends React.Component {
                                 <h4>Last Transaction</h4>
                                 <span className="key">{
                                     this.state.block.transactions.length
-                                    ? this.state.block.transactions[this.state.block.transactions.length - 1].hash
+                                    ? this.state.block.transactions[this.state.block.transactions.length - 1].hash.slice(2)
                                     : 'No hashes in block yet'
                                 }</span>
                             </>
