@@ -1,3 +1,7 @@
+.Portal {
+    padding-bottom: 100px;
+}
+
 .Portal .refresh {
     background-color: #3B5CAE;
     color: white;
@@ -7,6 +11,7 @@
     display: block;
     font-family: 'Montserrat';
     font-size: 1em;
+    margin: 1rem 0;
 }
 
 .Portal {
@@ -50,6 +55,7 @@
     font-family: 'Roboto';
     font-weight: 500;
     color: #565656;
+    margin: 0.3rem 0;
 }
 
 .Portal .friends .pending {
@@ -64,6 +70,8 @@
     font-family: 'Roboto';
     font-weight: 500;
     font-size: 1em;
+    margin-top: 1rem;
+    margin-right: 1rem;
 }
 
 .Portal input[type="submit"],
