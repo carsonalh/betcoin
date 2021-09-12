@@ -64,7 +64,7 @@ class Portal extends React.Component {
         }
     };
 
-    acceptBet = async e => {
+    acceptBet = async (e, id) => {
         e.preventDefault();
 
         // TODO
@@ -75,13 +75,13 @@ class Portal extends React.Component {
         const { contract } = this.state;
 
         try {
-            await contract.agreeToBet(0);
+            await contract.agreeToBet(id);
         } catch (e) {
             console.error(e);
         }
     };
 
-    rejectBet = async e => {
+    rejectBet = async (e, id) => {
         e.preventDefault();
 
         // TODO
@@ -92,13 +92,13 @@ class Portal extends React.Component {
         const { contract } = this.state;
 
         try {
-            await contract.declineBet();
+            await contract.declineBet(id);
         } catch (e) {
             console.error(e);
         }
     };
 
-    acceptJudgement = async e => {
+    acceptJudgement = async (e, id) => {
         e.preventDefault();
 
         // TODO
@@ -108,13 +108,13 @@ class Portal extends React.Component {
         const { contract } = this.state;
 
         try {
-            await contract.adjudicate(0, 1);
+            await contract.adjudicate(id, 1);
         } catch (e) {
             console.error(e);
         }
     };
 
-    rejectJudgment = async e => {
+    rejectJudgment = async (e, id) => {
         e.preventDefault();
 
         // TODO
@@ -125,7 +125,7 @@ class Portal extends React.Component {
         const { contract } = this.state;
 
         try {
-            await contract.declineBet(0, 2);
+            await contract.declineBet(id, 2);
         } catch (e) {
             console.error(e);
         }
@@ -211,10 +211,12 @@ class Portal extends React.Component {
                 {this.state.bets?.filter(b => b[1] == this.state.address && b[6] == 1
 		).map(
                     b => <li key={b[7]}>From:{b[0]}, with judge:{b[2]}, desc:{b[5]}, amount:({b[3]}:{b[4]})
-			     <form onSubmit={this.acceptBet}>
+			     <form onSubmit={(e) =>
+				       this.acceptBet(e, b[7])}>
 				 <input type="submit" value="Accept"/>
 			     </form>
-			     <form onSubmit={this.rejectBet}>
+			     <form onSubmit={(e) =>
+				       this.rejectBet(e, b[7])}>
 				 <input type="submit" value="Reject"/>
 			     </form>
 			     
@@ -227,10 +229,12 @@ class Portal extends React.Component {
                 {this.state.bets?.filter(b => b[2] == this.state.address && b[6] == 2
 		).map(
                     b => <li key={b[7]}> Party 1:{b[0]}, Party 2:{b[1]}, desc:{b[5]}
-			     <form onSubmit={this.acceptJudgement}>
+			     <form onSubmit={(e) =>
+				       this.acceptJudgement(e, b[7])}>
 				 <input type="submit" value="Party 1"/>
 			     </form>
-			     <form onSubmit={this.rejectJudgement}>
+			     <form onSubmit={(e) =>
+				       this.rejectJudgement(e, b[7])}>
 				 <input type="submit" value="Party 2"/>
 			     </form>
 			 </li>
