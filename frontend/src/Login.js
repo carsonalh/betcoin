@@ -4,6 +4,9 @@ import { Link, Redirect } from 'react-router-dom';
 import postUser from './postUser';
 import { setUser } from './store';
 
+import './Login.css';
+import lockHead from './lock-head.png';
+
 class Login extends React.Component {
     state = {
         email: '',
@@ -33,13 +36,14 @@ class Login extends React.Component {
             <div className="Login">
                 {this.state.redirect}
                 <div className="Menu">
-                    <ul>
-                        <li><Link to="/signup">Sign Up Instead</Link></li>
-                    </ul>
+                    <div className="logo">
+                        <h1>Betcoin</h1>
+                    </div>
+                    <Link to="/signup">Sign Up</Link>
                 </div>
-                <h2>Login</h2>
-                {this.state.error}
+                <img src={lockHead} className="lock-head" />
                 <form onSubmit={this.submit}>
+                    <h2>Login</h2>
                     <input
                         type="email"
                         placeholder="Email"

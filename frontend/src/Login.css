@@ -1,0 +1,69 @@
+.Login {
+    width: 100vw;
+}
+
+.Login > * {
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+.Menu {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+    box-sizing: border-box;
+    padding: 0 2rem;
+}
+
+.Menu h1 {
+    font-family: 'Eras Bold ITC';
+}
+
+.Menu a {
+    display: block;
+    text-decoration: none;
+    color: rgb(92, 92, 92);
+    font-family: 'Roboto';
+}
+
+.Login form {
+    background-color: rgb(59, 92, 174);
+    color: white;
+    max-width: 350px;
+    margin: 0 auto;
+    padding: 2rem 1rem 1rem 1rem;
+    border-radius: 8px;
+}
+
+.Login .lock-head {
+    display: block;
+    margin: 0 auto;
+    max-width: 300px;
+}
+
+.Login form h2 {
+    font-family: 'Eras Bold ITC';
+    padding-bottom: 1rem;
+}
+
+.Login input {
+    display: block;
+    width: 100%;
+    border: none;
+    background-color: #DBE2EB;
+    font-family: 'Roboto';
+    color: #3F4756;
+    box-sizing: border-box;
+    padding: 1rem 0.5rem;
+    margin: 1rem 0;
+    border-radius: 3px;
+}
+
+.Login input[type="submit"] {
+    cursor: pointer;
+    background-color: #2E3D63;
+    color: #E1EAFF;
+    font-family: 'Montserrat';
+    font-size: 1.5rem;
+}
