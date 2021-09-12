@@ -165,8 +165,7 @@ class Portal extends React.Component {
         const numBets = await contract.getLargestID();
         for (let i = 0; i < numBets; ++i) {
             let bet = await contract.getBet(i);
-	    let bet2 = new Array(bet[0], bet[1], bet[2], parseInt(bet[3]._hex), parseInt(bet[4]._hex), bet[5], parseInt(bet[6]._hex), i);
-            bets.push(bet2
+            bets.push({better1id: bet[0], better2id: bet[1], judgeid: bet[2], better1amount: parseInt(bet[3]._hex), better2amount: parseInt(bet[4]._hex), description: bet[5], state: parseInt(bet[6]._hex), id: i}
             );
         }
 	console.log(bets);
@@ -208,15 +207,15 @@ class Portal extends React.Component {
 	const pendingBets =
             <ul>
                 <h3>Pending Bets</h3>
-                {this.state.bets?.filter(b => b[1] == this.state.address && b[6] == 1
+                {this.state.bets?.filter(b => b.better2id == this.state.address && b.state == 1
 		).map(
-                    b => <li key={b[7]}>From:{b[0]}, with judge:{b[2]}, desc:{b[5]}, amount:({b[3]}:{b[4]})
+                    b => <li key={b.id}>From:{b.better1id}, with judge:{b.judgeid}, desc:{b.description}, amount:({b.better1amount}:{b.better2amount})
 			     <form onSubmit={(e) =>
-				       this.acceptBet(e, b[7])}>
+				       this.acceptBet(e, b.id)}>
 				 <input type="submit" value="Accept"/>
 			     </form>
 			     <form onSubmit={(e) =>
-				       this.rejectBet(e, b[7])}>
+				       this.rejectBet(e, b.id)}>
 				 <input type="submit" value="Reject"/>
 			     </form>
 			     
@@ -226,15 +225,15 @@ class Portal extends React.Component {
 	const pendingJudgements =
             <ul>
                 <h3>Pending Judgements</h3>
-                {this.state.bets?.filter(b => b[2] == this.state.address && b[6] == 2
+                {this.state.bets?.filter(b => b.judgeid == this.state.address && b.state == 2
 		).map(
-                    b => <li key={b[7]}> Party 1:{b[0]}, Party 2:{b[1]}, desc:{b[5]}
+                    b => <li key={b.id}> Party 1:{b.better1id}, Party 2:{b.better2id}, desc:{b.description}
 			     <form onSubmit={(e) =>
-				       this.acceptJudgement(e, b[7])}>
+				       this.acceptJudgement(e, b.id)}>
 				 <input type="submit" value="Party 1"/>
 			     </form>
 			     <form onSubmit={(e) =>
-				       this.rejectJudgement(e, b[7])}>
+				       this.rejectJudgement(e, b.id)}>
 				 <input type="submit" value="Party 2"/>
 			     </form>
 			 </li>
