@@ -113,9 +113,6 @@ class Portal extends React.Component {
                 const { friends } = res.data;
                 this.setState({ friends });
             });
-		
-		let maxID = this.state.contract.getLargestID();
-		this.state.pendingBets = {b.betID = maxID, b.better1 = maxID, b.better1amount = maxID, b.better2amount = maxID, b.desc = maxID};
     }
     
     render() {
@@ -125,13 +122,6 @@ class Portal extends React.Component {
                 <h3>Friends</h3>
                 {this.state.friends?.map(
                     f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
-                )}
-            </ul>;
-        const pendingBets =
-            <ul>
-                <h3>Pending bets</h3>
-                {this.state.pendingBets?.map(
-                    b => <li key={b.betID}>With: {b.better1} (betting: {b.better1amount}), Desc: {b.desc}, Bet amount (for you): {b.better2amount}</li>
                 )}
             </ul>;
         return (
