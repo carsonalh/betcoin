@@ -23,6 +23,7 @@ class Portal extends React.Component {
         betAmount: null,
         betOtherAmount: null,
         error: null,
+	address: null,
         bets: []
     };
 
@@ -62,6 +63,42 @@ class Portal extends React.Component {
             console.error(e);
         }
     };
+
+    acceptBet = async e => {
+        e.preventDefault();
+
+        // TODO
+        if (!this.state.contract) {
+            return;
+        }
+
+        const { contract } = this.state;
+
+        try {
+            await contract.agreeToBet(0);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    rejectBet = async e => {
+        e.preventDefault();
+
+        // TODO
+        if (!this.state.contract) {
+            return;
+        }
+
+        const { contract } = this.state;
+
+        try {
+            await contract.declineBet();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+
     
     addFriend = e => {
         e.preventDefault();
@@ -87,16 +124,19 @@ class Portal extends React.Component {
         const blockNumber = await provider.getBlockNumber();
         const block = await provider.getBlockWithTransactions(blockNumber);
         const wallet = new ethers.Wallet(this.props.user.privateKey, provider);
+	this.state.address = ethers.utils.computeAddress(wallet.publicKey);
         const contract = new ethers.Contract(Portal.CONTRACT_ADDRESS, abi, wallet);
         const balance = await contract.getBalance();
         const numberBalance = Number.parseInt(balance._hex, 16);
         const bets = [];
         const numBets = await contract.getLargestID();
         for (let i = 0; i < numBets; ++i) {
-            bets.push(
-                await contract.getBet(i)
+            let bet = await contract.getBet(i);
+	    let bet2 = new Array(bet[0], bet[1], bet[2], parseInt(bet[3]._hex), parseInt(bet[4]._hex), bet[5], parseInt(bet[6]._hex), i);
+            bets.push(bet2
             );
         }
+	console.log(bets);
         this.setState({ bets, block, contract, balance: numberBalance });
     };
 
@@ -132,6 +172,22 @@ class Portal extends React.Component {
                     f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
                 )}
             </ul>;
+	const pendingBets =
+            <ul>
+                <h3>Pending Bets</h3>
+                {this.state.bets?.filter(b => b[1] == this.state.address && b[6] == 1
+		).map(
+                    b => <li key={b[7]}>From:{b[0]}, with judge:{b[2]}, desc:{b[5]}, amount:({b[3]}:{b[4]})
+			     <form onSubmit={this.acceptBet}>
+				 <input type="submit" value="Accept"/>
+			     </form>
+			     <form onSubmit={this.rejectBet}>
+				 <input type="submit" value="Reject"/>
+			     </form>
+			     
+			 </li>
+                )}
+            </ul>;
         return (
             <div className="Portal">
                 {redirect}
@@ -165,6 +221,7 @@ class Portal extends React.Component {
                 </form>
                 {this.state.friendStatus}
                 {friends || 'You don\'t have any friends yet.'}
+		{pendingBets || 'No bets pending'}
                 <h3>Create a Bet</h3>
                 {this.state.error}
                 <form onSubmit={this.submitBet}>
