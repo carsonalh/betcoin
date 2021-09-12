@@ -142,8 +142,6 @@ class Portal extends React.Component {
         }
     };
 
-
-
     addFriend = e => {
         e.preventDefault();
 
@@ -216,10 +214,28 @@ class Portal extends React.Component {
         axios
             .get(`/users/${this.props.user.id}/friends`)
             .then(res => {
-                const { friends } = res.data;
+                const friends = res.data.friends.map(friend => {
+                    const { publicKey } = friend;
+                    console.log('publicKey', publicKey);
+                    friend.address = ethers.utils.computeAddress('0x' + publicKey);
+                    return { ...friend };
+                });
+                console.dir(friends);
+
                 this.setState({ friends });
             });
     }
+
+    getNameFromAddress = address => {
+        if (!this.state.friends) {
+            return;
+        }
+
+        const index = this.state.friends.map(friend => friend.address).indexOf(address);
+        if (index < 0)
+            return address;
+        return this.state.friends[index].name;
+    };
 
     render() {
         const redirect = this.props.user ? null : <Redirect to="/" />;
@@ -231,7 +247,7 @@ class Portal extends React.Component {
                 <h3>Pending Bets</h3>
                 {this.state.bets?.filter(b => b.better2id == this.state.address && b.state == 1
                 ).map(
-                    b => <li key={b.id}>From:{b.better1id}, with judge:{b.judgeid}, desc:{b.description}, amount:({b.better1amount}:{b.better2amount})
+                    b => <li key={b.id}>From:{this.getNameFromAddress(b.better1id)}, with judge:{this.getNameFromAddress(b.judgeid)}, desc:{b.description}, Them: {b.better1amount} BC You: {b.better2amount} BC
                         <form onSubmit={(e) =>
                             this.acceptBet(e, b.id)}>
                             <input type="submit" value="Accept" />
