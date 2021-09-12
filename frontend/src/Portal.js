@@ -269,7 +269,7 @@ class Portal extends React.Component {
                         </form>
                         <form onSubmit={(e) =>
                             this.rejectBet(e, b.id)}>
-                            <input type="submit" value="Reject" />
+                            <input type="submit" value="Decline" />
                         </form>
 
                     </li>

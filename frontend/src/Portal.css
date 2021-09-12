@@ -24,6 +24,14 @@
     margin: 0.5rem 0;
 }
 
+.Portal .incoming input[value="Accept"] {
+    background-color: #3CBD5B;
+}
+
+.Portal .incoming input[value="Decline"] {
+    background-color: #E75C67;
+}
+
 .Portal .incoming input {
     margin: 0;
     margin-left: 0.5rem;
