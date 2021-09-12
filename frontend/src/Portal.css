@@ -14,6 +14,26 @@
     margin: 1rem 0;
 }
 
+.Portal .incoming {
+    font-family: 'Roboto';
+    list-style-type: none;
+    padding: 0;
+}
+
+.Portal .incoming li {
+    margin: 0.5rem 0;
+}
+
+.Portal .incoming input {
+    margin: 0;
+    margin-left: 0.5rem;
+}
+
+.Portal .incoming li > * {
+    display: inline;
+    margin-right: 1rem;
+}
+
 .Portal {
     max-width: 800px;;
     margin: 0 auto;
