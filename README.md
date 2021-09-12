@@ -1,5 +1,5 @@
 
-![Betcoin: Cryptocurrency, Gambling - Good separate, Better together](landing.jpg)
+![Betcoin: Cryptocurrency, Gambling - Good separate, Better together](https://raw.githubusercontent.com/carsonalh/betcoin/master/landing.png)
 ## Will he pay up?
 You're at the bar with your mate. He swears that he can fit 42 pretzels in his mouth. Obviously, you call his bluff and bet him $10. This happens every week, but he always bails with the cash. How can you ensure he pays this time? With a blockchain of course!
 
@@ -12,10 +12,10 @@ Betcoin is a new Ethereum-powered cryptocurrency specifically made for betting s
 3. Get your friend to agree to the bet (or they can reject it if they think it is unfair)
 4. The Betcoin gets put into a pot
 5. Let the adjudicator decide (and get your winnings)
-!![Betcoin - Powered by Ethereum](power.jpg)
+![Betcoin - Powered by Ethereum](https://raw.githubusercontent.com/carsonalh/betcoin/master/power.png)
 ## Prototype Design
-![Login Page](prototype1.jpg)
-![Main Page](prototype2.jpg)
+![Login Page](https://raw.githubusercontent.com/carsonalh/betcoin/master/prototype1.png)
+![Main Page](https://raw.githubusercontent.com/carsonalh/betcoin/master/prototype2.png)
 
 ## The Nitty-Gritty
 The stack:
