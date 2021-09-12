@@ -98,6 +98,39 @@ class Portal extends React.Component {
         }
     };
 
+    acceptJudgement = async e => {
+        e.preventDefault();
+
+        // TODO
+        if (!this.state.contract) {
+            return;
+        }
+        const { contract } = this.state;
+
+        try {
+            await contract.adjudicate(0, 1);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    rejectJudgment = async e => {
+        e.preventDefault();
+
+        // TODO
+        if (!this.state.contract) {
+            return;
+        }
+
+        const { contract } = this.state;
+
+        try {
+            await contract.declineBet(0, 2);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
 
     
     addFriend = e => {
@@ -188,6 +221,21 @@ class Portal extends React.Component {
 			 </li>
                 )}
             </ul>;
+	const pendingJudgements =
+            <ul>
+                <h3>Pending Judgements</h3>
+                {this.state.bets?.filter(b => b[2] == this.state.address && b[6] == 2
+		).map(
+                    b => <li key={b[7]}> Party 1:{b[0]}, Party 2:{b[1]}, desc:{b[5]}
+			     <form onSubmit={this.acceptJudgement}>
+				 <input type="submit" value="Party 1"/>
+			     </form>
+			     <form onSubmit={this.rejectJudgement}>
+				 <input type="submit" value="Party 2"/>
+			     </form>
+			 </li>
+                )}
+            </ul>;
         return (
             <div className="Portal">
                 {redirect}
@@ -222,6 +270,7 @@ class Portal extends React.Component {
                 {this.state.friendStatus}
                 {friends || 'You don\'t have any friends yet.'}
 		{pendingBets || 'No bets pending'}
+		{pendingJudgements || 'No judgements pending'}
                 <h3>Create a Bet</h3>
                 {this.state.error}
                 <form onSubmit={this.submitBet}>
