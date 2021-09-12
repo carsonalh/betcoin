@@ -7,12 +7,12 @@ import abi from './abi';
 
 class Portal extends React.Component {
     static CONTRACT_ADDRESS = '0x5fbdb2315678afecb367f032d93f642f64180aa3';
-    
+
     state = {
         friendEmail: '',
         friendStatus: null,
         friends: null,
-		pendingBets: null,
+        pendingBets: null,
         provider: null,
         block: null,
         balance: null,
@@ -23,8 +23,17 @@ class Portal extends React.Component {
         betAmount: null,
         betOtherAmount: null,
         error: null,
-	address: null,
+        address: null,
         bets: []
+    };
+
+    refresh = async e => {
+        e.preventDefault();
+
+        if (!this.state.contract)
+            return;
+
+        await this.intializeUserState();
     };
 
     getPublicKeyFromEmail = email => {
@@ -132,7 +141,7 @@ class Portal extends React.Component {
     };
 
 
-    
+
     addFriend = e => {
         e.preventDefault();
 
@@ -150,6 +159,27 @@ class Portal extends React.Component {
             });
     };
 
+    intializeUserState = async () => {
+        if (!this.state.contract) {
+            return;
+        }
+
+        const { contract } = this.state;
+        
+        const bets = [];
+        const numBets = await contract.getLargestID();
+        for (let i = 0; i < numBets; ++i) {
+            let bet = await contract.getBet(i);
+            bets.push({ better1id: bet[0], better2id: bet[1], judgeid: bet[2], better1amount: parseInt(bet[3]._hex), better2amount: parseInt(bet[4]._hex), description: bet[5], state: parseInt(bet[6]._hex), id: i }
+            );
+        }
+
+        const balance = await contract.getBalance();
+        const numberBalance = Number.parseInt(balance._hex, 16);
+
+        this.setState({ bets, balance: numberBalance });
+    };
+
     initializeBlockChain = async () => {
         if (!this.state.provider) return;
 
@@ -157,24 +187,18 @@ class Portal extends React.Component {
         const blockNumber = await provider.getBlockNumber();
         const block = await provider.getBlockWithTransactions(blockNumber);
         const wallet = new ethers.Wallet(this.props.user.privateKey, provider);
-	this.state.address = ethers.utils.computeAddress(wallet.publicKey);
+        this.state.address = ethers.utils.computeAddress(wallet.publicKey);
         const contract = new ethers.Contract(Portal.CONTRACT_ADDRESS, abi, wallet);
-        const balance = await contract.getBalance();
-        const numberBalance = Number.parseInt(balance._hex, 16);
-        const bets = [];
-        const numBets = await contract.getLargestID();
-        for (let i = 0; i < numBets; ++i) {
-            let bet = await contract.getBet(i);
-            bets.push({better1id: bet[0], better2id: bet[1], judgeid: bet[2], better1amount: parseInt(bet[3]._hex), better2amount: parseInt(bet[4]._hex), description: bet[5], state: parseInt(bet[6]._hex), id: i}
-            );
-        }
-	console.log(bets);
-        this.setState({ bets, block, contract, balance: numberBalance });
+        this.setState({ block, contract });
     };
 
     componentDidUpdate(prevProps, prevState) {
         if (!prevState.provider && this.state.provider) {
             this.initializeBlockChain();
+        }
+        if (!prevState.contract && this.state.contract) {
+            // Only called when the contract is set
+            this.intializeUserState();
         }
     }
 
@@ -182,7 +206,7 @@ class Portal extends React.Component {
         if (!this.props.user) {
             return;
         }
-        
+
         // http://localhost:8545/ by default
         const provider = new ethers.providers.getDefaultProvider('http://localhost:8545');
         this.setState({ provider });
@@ -194,7 +218,7 @@ class Portal extends React.Component {
                 this.setState({ friends });
             });
     }
-    
+
     render() {
         const redirect = this.props.user ? null : <Redirect to="/" />;
         const friends =
@@ -204,44 +228,45 @@ class Portal extends React.Component {
                     f => <li key={f.email}>{f.name} ({f.email}){f.pending && ' -- Pending'}</li>
                 )}
             </ul>;
-	const pendingBets =
+        const pendingBets =
             <ul>
                 <h3>Pending Bets</h3>
                 {this.state.bets?.filter(b => b.better2id == this.state.address && b.state == 1
-		).map(
+                ).map(
                     b => <li key={b.id}>From:{b.better1id}, with judge:{b.judgeid}, desc:{b.description}, amount:({b.better1amount}:{b.better2amount})
-			     <form onSubmit={(e) =>
-				       this.acceptBet(e, b.id)}>
-				 <input type="submit" value="Accept"/>
-			     </form>
-			     <form onSubmit={(e) =>
-				       this.rejectBet(e, b.id)}>
-				 <input type="submit" value="Reject"/>
-			     </form>
-			     
-			 </li>
+                        <form onSubmit={(e) =>
+                            this.acceptBet(e, b.id)}>
+                            <input type="submit" value="Accept" />
+                        </form>
+                        <form onSubmit={(e) =>
+                            this.rejectBet(e, b.id)}>
+                            <input type="submit" value="Reject" />
+                        </form>
+
+                    </li>
                 )}
             </ul>;
-	const pendingJudgements =
+        const pendingJudgements =
             <ul>
                 <h3>Pending Judgements</h3>
                 {this.state.bets?.filter(b => b.judgeid == this.state.address && b.state == 2
-		).map(
+                ).map(
                     b => <li key={b.id}> Party 1:{b.better1id}, Party 2:{b.better2id}, desc:{b.description}
-			     <form onSubmit={(e) =>
-				       this.acceptJudgement(e, b.id)}>
-				 <input type="submit" value="Party 1"/>
-			     </form>
-			     <form onSubmit={(e) =>
-				       this.rejectJudgement(e, b.id)}>
-				 <input type="submit" value="Party 2"/>
-			     </form>
-			 </li>
+                        <form onSubmit={(e) =>
+                            this.acceptJudgement(e, b.id)}>
+                            <input type="submit" value="Party 1" />
+                        </form>
+                        <form onSubmit={(e) =>
+                            this.rejectJudgement(e, b.id)}>
+                            <input type="submit" value="Party 2" />
+                        </form>
+                    </li>
                 )}
             </ul>;
         return (
             <div className="Portal">
                 {redirect}
+                <button onClick={this.refresh}>Refresh</button>
                 Signed in as {this.props.user?.name} <br />
                 My public key {this.props.user?.publicKey} <br />
                 My balance is {this.state.balance || 'loading'} <br />
@@ -272,8 +297,8 @@ class Portal extends React.Component {
                 </form>
                 {this.state.friendStatus}
                 {friends || 'You don\'t have any friends yet.'}
-		{pendingBets || 'No bets pending'}
-		{pendingJudgements || 'No judgements pending'}
+                {pendingBets || 'No bets pending'}
+                {pendingJudgements || 'No judgements pending'}
                 <h3>Create a Bet</h3>
                 {this.state.error}
                 <form onSubmit={this.submitBet}>
