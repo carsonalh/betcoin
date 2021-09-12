@@ -532,22 +532,30 @@ async function main() {
 		  "type": "function"
 		}
 	  ], signer);
+	  
 	 // addresses are the second and third address always created on the local network. Time is set to never run out
-	 await contract.makeBet('0x70997970c51812dc3a010c7d01b50e0d17dc79c8', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', 5, 10, "This is a description", 2**40 - 1);
+	 //await contract.makeBet('0x70997970c51812dc3a010c7d01b50e0d17dc79c8', '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc', 5, 10, "This is a description", 2**40 - 1);
 	 // agreeOnBet(), declineBet(), and adjudicate() should all work similarly
 	 
 	 // Cheat to get bet ID without listening
-	 let betID = await contract.getLargestID()-1;
-	 console.log("The id of this bet is " + betID);
+	 //let betID = await contract.getLargestID()-1;
+	 //console.log("The id of this bet is " + betID);
 	 
-	 let balance = await contract.getBalance();
-	 console.log("The balance of this user is " + balance);
+	 //let balance = await contract.getBalance();
+	 //console.log("The balance of this user is " + balance);
 	 
 	 // You also have getBet()
-	 console.log(await contract.getBet(betID));
+	 //console.log(await contract.getBet(betID));
 
-	 for (const address of require('./addresses')) {
-		 // From Pub(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266) send 0.1 ETH to `address`
+	// Initiate each address in the file privates with 0.1 ETH, as to ensure that demos work quickly. In deployment, accounts should not get free ether, but should have to add it themselves.
+	 for (const privates of require('./privates')) {
+		// From Pub(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266) send 0.1 ETH to `address`
+		let toProvider = ethers.getDefaultProvider("http://localhost:8545");
+		// Wallet address is the first address always created on the local network (its constant between restarts)
+		let toSigner = new ethers.Wallet(privates, provider);
+		let toAddress = await toSigner.getAddress();
+		await signer.sendTransaction({ to:toAddress, value:ethers.utils.parseEther("1.0")});
+		
 	 }
 }
 

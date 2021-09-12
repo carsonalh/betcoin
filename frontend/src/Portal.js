@@ -12,6 +12,7 @@ class Portal extends React.Component {
         friendEmail: '',
         friendStatus: null,
         friends: null,
+		pendingBets: null,
         provider: null,
         block: null,
         balance: null,
