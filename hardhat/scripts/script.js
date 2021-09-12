@@ -548,11 +548,11 @@ async function main() {
 	 //console.log(await contract.getBet(betID));
 
 	// Initiate each address in the file privates with 0.1 ETH, as to ensure that demos work quickly. In deployment, accounts should not get free ether, but should have to add it themselves.
-	 for (const privates of require('./privates')) {
+	 for (const privateKey of require('./privates')) {
 		// From Pub(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266) send 0.1 ETH to `address`
 		let toProvider = ethers.getDefaultProvider("http://localhost:8545");
 		// Wallet address is the first address always created on the local network (its constant between restarts)
-		let toSigner = new ethers.Wallet(privates, provider);
+		let toSigner = new ethers.Wallet('0x' + privateKey, provider);
 		let toAddress = await toSigner.getAddress();
 		await signer.sendTransaction({ to:toAddress, value:ethers.utils.parseEther("1.0")});
 		
