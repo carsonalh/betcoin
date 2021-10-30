@@ -1,6 +1,7 @@
-const app = require('express').Router();
-const connection = require('./database');
-const ethers = require('ethers');
+const app = require("express").Router();
+const connection = require("./database");
+const ethers = require("ethers");
+const { Store } = require("./store");
 
 /*
     Used to create a new user and get user data. If the user already exists,
@@ -31,68 +32,58 @@ const ethers = require('ethers');
     }
 */
 
-app.post('/users', (req, res) => {
-    const { user } = req.body;
-    const passwordHash = ethers.utils.sha256(ethers.utils.toUtf8Bytes(user.password)).slice(2);
-    const name = user.name || 'Anonymous';
-    const id = ethers.utils.base64.encode(ethers.utils.toUtf8Bytes(user.email));
-    connection.query(
-        'SELECT * FROM users WHERE users.email = ?',
-        [user.email],
-        (err, results, fields) => {
-            if (!err) {
-                if (results.length) {
-                    const row = results[0];
-                    const { passwordSha256, privateKey } = row;
-                    if (passwordHash !== passwordSha256) {
-                        res.status(403).json({ message: 'FAILED' });
-                    } else {
-                        const wallet = new ethers.Wallet('0x' + privateKey);
-                        const publicKey = wallet.publicKey.slice(2);
-                        res
-                            .status(200)
-                            .json({
-                                user: {
-                                    id,
-                                    email: user.email,
-                                    name: row.name,
-                                    publicKey,
-                                    privateKey
-                                }
-                            });
-                    }
-                } else {
-                    const wallet = ethers.Wallet.createRandom();
-                    const privateKey = wallet.privateKey.slice(2);
-                    const publicKey = wallet.publicKey.slice(2);
-                    connection.query(
-                        `INSERT INTO users VALUES (?, ?, ?, ?);`,
-                        [user.email, name, passwordHash, privateKey],
-                        (err, results, fields) => {
-                            // Put the response here...
-                            if (!err) {
-                                res
-                                    .status(200)
-                                    .json({
-                                        user: {
-                                            id,
-                                            email: user.email,
-                                            name: name,
-                                            publicKey,
-                                            privateKey
-                                        }
-                                    })
-                            } else {
-                                res.status(500).json({ message: 'FAILED' });
-                            }
-                        }
-                    );
-                }
-            } else {
-                res.status(500).json({ message: 'FAILED' });
-            }
+app.post("/users", (req, res) => {
+  const { user } = req.body;
+  const passwordHash = ethers.utils
+    .sha256(ethers.utils.toUtf8Bytes(user.password))
+    .slice(2);
+  const name = user.name || "Anonymous";
+  const id = ethers.utils.base64.encode(ethers.utils.toUtf8Bytes(user.email));
+
+  const wallet = ethers.Wallet.createRandom();
+  const privateKey = wallet.privateKey.slice(2);
+  const publicKey = wallet.publicKey.slice(2);
+
+  Store.getUserByEmail(user.email)
+    .then((storedUser) => {
+      if (storedUser) {
+        const { passwordSha256, privateKey } = storedUser;
+        if (passwordHash !== passwordSha256) {
+          res.status(403).json({ message: "FAILED" });
+        } else {
+          const wallet = new ethers.Wallet("0x" + privateKey);
+          const publicKey = wallet.publicKey.slice(2);
+          res.status(200).json({
+            user: {
+              id,
+              email: user.email,
+              name: storedUser.name,
+              publicKey,
+              privateKey,
+            },
+          });
         }
-    );
+      } else {
+        return Store.createUser({
+          email: user.email,
+          name,
+          passwordHash,
+          privateKey,
+        });
+      }
+    })
+    .then(() => {
+      res.status(200).json({
+        user: {
+          id,
+          email: user.email,
+          name: name,
+          publicKey,
+          privateKey,
+        },
+      });
+    })
+    .catch(() => res.status(500).json({ message: "FAILED" }));
 });
 
 /*
@@ -118,112 +109,99 @@ app.post('/users', (req, res) => {
     }
 */
 
-app.post('/users/:userId/friends', (req, res) => {
-    const email = ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId));
-    const { friend } = req.body;
+app.post("/users/:userId/friends", (req, res) => {
+  const email = ethers.utils.toUtf8String(
+    ethers.utils.base64.decode(req.params.userId)
+  );
+  const { friend } = req.body;
 
-    if (email === friend.email) {
-        res
-            .status(300)
-            .json({
-                message: 'Cannot be friends with oneself'
-            });
-    }
+  if (email === friend.email) {
+    res.status(300).json({
+      message: "Cannot be friends with oneself",
+    });
+  }
 
-    console.log('FRIEND REQUEST', email, friend.email);
-    connection.query(
-	'SELECT privateKey FROM users WHERE email = ?',
-	[friend.email],
-	(err, results, fields) => {
-	    const wallet = new ethers.Wallet('0x' + results[0].privateKey);
-	    const publicKey = wallet.publicKey.slice(2);
-	        // Add the friendship if it does not exist
-	    connection.query(
-		'INSERT INTO friends VALUES (?, ?);',
-		[email, friend.email],
-		(err, results, fields) => {
-		    if (!err || (err && err.code === 'ER_DUP_ENTRY')) {
-			// Check if the reverse relationship exists
-			connection.query(
-			    `SELECT users.name as \`friendName\`, friends.fromEmail, friends.toEmail
+  console.log("FRIEND REQUEST", email, friend.email);
+  connection.query(
+    "SELECT privateKey FROM users WHERE email = ?",
+    [friend.email],
+    (err, results, fields) => {
+      const wallet = new ethers.Wallet("0x" + results[0].privateKey);
+      const publicKey = wallet.publicKey.slice(2);
+      // Add the friendship if it does not exist
+      connection.query(
+        "INSERT INTO friends VALUES (?, ?);",
+        [email, friend.email],
+        (err, results, fields) => {
+          if (!err || (err && err.code === "ER_DUP_ENTRY")) {
+            // Check if the reverse relationship exists
+            connection.query(
+              `SELECT users.name as \`friendName\`, friends.fromEmail, friends.toEmail
                     FROM friends
                         JOIN users ON users.email = friends.fromEmail
                     WHERE fromEmail = ? AND toEmail = ?`,
-			    [friend.email, email],
-			    (err, results, fields) => {
-				if (!err) {
-				    if (results.length) {
-					// Accepting a friend request
-					const row = results[0];
-					res
-					    .status(200)
-					    .json({
-						friend: {
-						    email: friend.email,
-						    name: row.friendName,
-						    pending: false,
-						    publicKey: publicKey
-						}
-					    });
-				    } else {
-					// Making a friend request
-					connection.query(
-					    `SELECT users.name AS \`friendName\` FROM users WHERE users.email = ?`,
-					    [friend.email],
-					    (err, results, fields) => {
-						if (!err) {
-						    if (results.length) {
-							// The friend actually exists
-							const row = results[0];
-							res
-							    .status(200)
-							    .json({
-								friend: {
-								    email: friend.email,
-								    name: row.friendName,
-								    pending: true,
-								    publicKey: publicKey
-								}
-							    });
-						    } else {
-							// They don't
-							res
-							    .status(300)
-							    .json({
-								message: 'The friend does not exist'
-							    });
-						    }
-						} else {
-						    res
-							.status(500)
-							.json({
-							    message: 'Database error'
-							});
-						}
-					    }
-					);
-				    }
-				} else {
-				    res
-					.status(500)
-					.json({
-					    message: 'Database error'
-					});
-				}
-			    }
-			);
-		    } else {
-			res
-			    .status(500)
-			    .json({
-				message: 'Database error'
-			    });
-		    }
-		}
-	    );
-
-	}
-    )
+              [friend.email, email],
+              (err, results, fields) => {
+                if (!err) {
+                  if (results.length) {
+                    // Accepting a friend request
+                    const row = results[0];
+                    res.status(200).json({
+                      friend: {
+                        email: friend.email,
+                        name: row.friendName,
+                        pending: false,
+                        publicKey: publicKey,
+                      },
+                    });
+                  } else {
+                    // Making a friend request
+                    connection.query(
+                      `SELECT users.name AS \`friendName\` FROM users WHERE users.email = ?`,
+                      [friend.email],
+                      (err, results, fields) => {
+                        if (!err) {
+                          if (results.length) {
+                            // The friend actually exists
+                            const row = results[0];
+                            res.status(200).json({
+                              friend: {
+                                email: friend.email,
+                                name: row.friendName,
+                                pending: true,
+                                publicKey: publicKey,
+                              },
+                            });
+                          } else {
+                            // They don't
+                            res.status(300).json({
+                              message: "The friend does not exist",
+                            });
+                          }
+                        } else {
+                          res.status(500).json({
+                            message: "Database error",
+                          });
+                        }
+                      }
+                    );
+                  }
+                } else {
+                  res.status(500).json({
+                    message: "Database error",
+                  });
+                }
+              }
+            );
+          } else {
+            res.status(500).json({
+              message: "Database error",
+            });
+          }
+        }
+      );
+    }
+  );
 });
 
 /*
@@ -246,9 +224,9 @@ app.post('/users/:userId/friends', (req, res) => {
         }]
     }
  */
-app.get('/users/:userId/friends', (req, res) => {
-    connection.query(
-`
+app.get("/users/:userId/friends", (req, res) => {
+  connection.query(
+    `
 (
 SELECT email, name, privateKey, FALSE AS pending FROM users
 WHERE
@@ -277,28 +255,27 @@ SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
 )
 )
 `,
-	[ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-	 ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId))],
-	(err, results, fields) =>
-	{
-	    res
-		.status(200)
-		.json({
-		    friends: results.map(r => {
-			const wallet = new ethers.Wallet('0x' + r.privateKey);
-                        const publicKey = wallet.publicKey.slice(2);
-			return {
-			email: r.email,
-			name: r.name,
-			pending: !!r.pending,
-			publicKey: publicKey
-			};
-		    })
-		})
-	}
-    )
+    [
+      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
+    ],
+    (err, results, fields) => {
+      res.status(200).json({
+        friends: results.map((r) => {
+          const wallet = new ethers.Wallet("0x" + r.privateKey);
+          const publicKey = wallet.publicKey.slice(2);
+          return {
+            email: r.email,
+            name: r.name,
+            pending: !!r.pending,
+            publicKey: publicKey,
+          };
+        }),
+      });
+    }
+  );
 });
 
 module.exports = app;
