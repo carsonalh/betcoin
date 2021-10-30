@@ -2,9 +2,9 @@
   "name": "betcoin-backend",
   "version": "0.1.0",
   "description": "User account backend for betcoin wallet client.",
-  "main": "index.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node src/app.js"
   },
   "keywords": [],
   "author": "",
