@@ -76,6 +76,32 @@ class Store {
       );
     });
   }
+
+  static async addFriend(fromEmail, toEmail) {
+    return new Promise((resolve, reject) => {
+      connection.query(
+        `INSERT IGNORE INTO friends (fromEmail, toEmail) VALUES (?, ?);
+SELECT COUNT(*) < 1 AS \`pending\` FROM friends WHERE toEmail = ? AND fromEmail = ?;
+`,
+        // SELECT NOT (COUNT(*) >= 1) AS \`pending\` FROM (SELECT * FROM friends WHERE toEmail = ? AND fromEmail = ?);`,
+        [fromEmail, toEmail, fromEmail, toEmail],
+        (err, results, fields) => {
+          if (err) {
+            reject(err);
+          } else {
+            // Will ignore the result of the "INSERT" statement
+            const { pending } = results[1];
+
+            resolve({
+              from: fromEmail,
+              to: toEmail,
+              pending,
+            });
+          }
+        }
+      );
+    });
+  }
 }
 
 module.exports = { Store };

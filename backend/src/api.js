@@ -113,95 +113,51 @@ app.post("/users/:userId/friends", (req, res) => {
   const email = ethers.utils.toUtf8String(
     ethers.utils.base64.decode(req.params.userId)
   );
-  const { friend } = req.body;
+  const { friend: requestedFriend } = req.body;
 
-  if (email === friend.email) {
+  if (email === requestedFriend.email) {
     res.status(300).json({
       message: "Cannot be friends with oneself",
     });
   }
 
-  console.log("FRIEND REQUEST", email, friend.email);
-  connection.query(
-    "SELECT privateKey FROM users WHERE email = ?",
-    [friend.email],
-    (err, results, fields) => {
-      const wallet = new ethers.Wallet("0x" + results[0].privateKey);
-      const publicKey = wallet.publicKey.slice(2);
-      // Add the friendship if it does not exist
-      connection.query(
-        "INSERT INTO friends VALUES (?, ?);",
-        [email, friend.email],
-        (err, results, fields) => {
-          if (!err || (err && err.code === "ER_DUP_ENTRY")) {
-            // Check if the reverse relationship exists
-            connection.query(
-              `SELECT users.name as \`friendName\`, friends.fromEmail, friends.toEmail
-                    FROM friends
-                        JOIN users ON users.email = friends.fromEmail
-                    WHERE fromEmail = ? AND toEmail = ?`,
-              [friend.email, email],
-              (err, results, fields) => {
-                if (!err) {
-                  if (results.length) {
-                    // Accepting a friend request
-                    const row = results[0];
-                    res.status(200).json({
-                      friend: {
-                        email: friend.email,
-                        name: row.friendName,
-                        pending: false,
-                        publicKey: publicKey,
-                      },
-                    });
-                  } else {
-                    // Making a friend request
-                    connection.query(
-                      `SELECT users.name AS \`friendName\` FROM users WHERE users.email = ?`,
-                      [friend.email],
-                      (err, results, fields) => {
-                        if (!err) {
-                          if (results.length) {
-                            // The friend actually exists
-                            const row = results[0];
-                            res.status(200).json({
-                              friend: {
-                                email: friend.email,
-                                name: row.friendName,
-                                pending: true,
-                                publicKey: publicKey,
-                              },
-                            });
-                          } else {
-                            // They don't
-                            res.status(300).json({
-                              message: "The friend does not exist",
-                            });
-                          }
-                        } else {
-                          res.status(500).json({
-                            message: "Database error",
-                          });
-                        }
-                      }
-                    );
-                  }
-                } else {
-                  res.status(500).json({
-                    message: "Database error",
-                  });
-                }
-              }
-            );
-          } else {
-            res.status(500).json({
-              message: "Database error",
-            });
-          }
+  console.log("FRIEND REQUEST", email, requestedFriend.email);
+  let friend;
+  Store.getUserByEmail(requestedFriend.email)
+    .then(
+      (returnedFriend) => {
+        friend = returnedFriend;
+        if (!friend) {
+          res
+            .status(400)
+            .json({ message: "User with that email could not be found" });
+          return;
+        } else {
+          // Add the friendship if it does not exist
+          return Store.addFriend(email, friend.email);
         }
-      );
-    }
-  );
+      },
+      () => res.status(500).json({ message: "FAILED" })
+    )
+    .then(
+      (friendship) => {
+        const wallet = new ethers.Wallet("0x" + friend.privateKey);
+        const publicKey = wallet.publicKey.slice(2);
+
+        res.status(200).json({
+          friend: {
+            email: friend.email,
+            name: friend.name,
+            pending: friendship.pending,
+            publicKey,
+          },
+        });
+      },
+      (err) => {
+        console.error(err);
+        res.status(500).json({ message: "FAILED MAKING THE FRIENDSHIP" });
+      }
+    );
 });
 
 /*

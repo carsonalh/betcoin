@@ -184,4 +184,73 @@ describe("Store", () => {
       );
     });
   });
+
+  describe("addFriend", () => {
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it("calls `connection.query` with the given emails", async () => {
+      const stub = sinon
+        .stub(connection, "query")
+        .callsFake((query, values, fn) => {
+          fn(null, [null, { pending: true }], []);
+        });
+
+      await Store.addFriend("john.doe@example.com", "jane.doe@example.com");
+
+      assert(stub.calledOnce);
+
+      // Not too sure if this is a good detail to test, but ok for now
+      assert.deepEqual(stub.getCall(0).args[1], [
+        "john.doe@example.com",
+        "jane.doe@example.com",
+        "john.doe@example.com",
+        "jane.doe@example.com",
+      ]);
+    });
+
+    it("rejects if `connection.query` passes an error", async () => {
+      sinon.stub(connection, "query").callsFake((query, values, fn) => {
+        fn(341, [null, { pending: false }], []);
+      });
+
+      try {
+        await Store.addFriend("john.doe@example.com", "jane.doe@example.com");
+        assert.fail();
+      } catch (e) {
+        assert.equal(e, 341);
+      }
+    });
+
+    it("resolves to inserted data (+ pending) if there is no error", async () => {
+      sinon.stub(connection, "query").callsFake((query, values, fn) => {
+        fn(null, [null, { pending: true }], ["pending"]);
+      });
+
+      assert.deepEqual(
+        await Store.addFriend("jane.doe@example.com", "john.doe@example.com"),
+        {
+          from: "jane.doe@example.com",
+          to: "john.doe@example.com",
+          pending: true,
+        }
+      );
+    });
+
+    it("resolves to inserted data (+ pending = false) where the inverse relationship exists", async () => {
+      sinon.stub(connection, "query").callsFake((query, values, fn) => {
+        fn(null, [null, { pending: false }], ["pending"]);
+      });
+
+      assert.deepEqual(
+        await Store.addFriend("jane.doe@example.com", "john.doe@example.com"),
+        {
+          from: "jane.doe@example.com",
+          to: "john.doe@example.com",
+          pending: false,
+        }
+      );
+    });
+  });
 });
