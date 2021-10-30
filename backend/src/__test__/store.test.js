@@ -253,4 +253,86 @@ describe("Store", () => {
       );
     });
   });
+
+  describe("getFriendsOfUser", () => {
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it("rejects if `connection.query` gives an error", async () => {
+      sinon.stub(connection, "query").callsFake((query, values, fn) => {
+        fn("hello", [], []);
+      });
+
+      try {
+        await Store.getFriendsOfUser("john.doe@example.com");
+        assert.fail();
+      } catch (e) {
+        assert.equal(e, "hello");
+      }
+    });
+
+    it("correctly maps the returned items to valid friend objects", async () => {
+      // PAIRS:
+      sinon.stub(connection, "query").callsFake((query, values, fn) => {
+        fn(
+          null,
+          [
+            {
+              email: "john.doe@example.com",
+              name: "John",
+              privateKey:
+                "6f0714b966f68b9e856484f8d66cae944bb5efc51664f883c9e098d13f47081e",
+              pending: false,
+            },
+            {
+              email: "jane.doe@example.com",
+              name: "Jane",
+              privateKey:
+                "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+              pending: false,
+            },
+            {
+              email: "bill.doe@example.com",
+              name: "Bill",
+              privateKey:
+                "5cd2414c151fbfc7dc0edfd0ef9227dfcd609ea9883906c2669a7cd7903509f2",
+              pending: true,
+            },
+          ],
+          ["email", "name", "privateKey", "pending"]
+        );
+      });
+
+      assert.deepEqual(await Store.getFriendsOfUser("alex.doe@example.com"), [
+        {
+          email: "john.doe@example.com",
+          name: "John",
+          publicKey:
+            "04f706393af66b9cc39559bc3167e38af5fb3ba969477cca052028a85a4511e463a59fee11943eec26f80b8d92fa88770cbbd9e14e2c7095b46b9ef3b817b60e63",
+          pending: false,
+        },
+        {
+          email: "jane.doe@example.com",
+          name: "Jane",
+          publicKey:
+            "04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b",
+          pending: false,
+        },
+        {
+          email: "bill.doe@example.com",
+          name: "Bill",
+          publicKey:
+            "047e0aae6d734daa15fc635443679c3a47a4f3c99c00cbace42018796bc44e24f197e66e03dfc0007aa3a2f541802e657176c8494f7759409965703d6cd490067a",
+          pending: true,
+        },
+      ]);
+      // 6f0714b966f68b9e856484f8d66cae944bb5efc51664f883c9e098d13f47081e
+      // 04f706393af66b9cc39559bc3167e38af5fb3ba969477cca052028a85a4511e463a59fee11943eec26f80b8d92fa88770cbbd9e14e2c7095b46b9ef3b817b60e63
+      // d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb
+      // 04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b
+      // 5cd2414c151fbfc7dc0edfd0ef9227dfcd609ea9883906c2669a7cd7903509f2
+      // 047e0aae6d734daa15fc635443679c3a47a4f3c99c00cbace42018796bc44e24f197e66e03dfc0007aa3a2f541802e657176c8494f7759409965703d6cd490067a
+    });
+  });
 });

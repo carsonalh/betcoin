@@ -62,6 +62,7 @@ app.post("/users", (req, res) => {
               privateKey,
             },
           });
+          return;
         }
       } else {
         return Store.createUser({
@@ -82,6 +83,7 @@ app.post("/users", (req, res) => {
           privateKey,
         },
       });
+      return;
     })
     .catch(() => res.status(500).json({ message: "FAILED" }));
 });
@@ -181,57 +183,15 @@ app.post("/users/:userId/friends", (req, res) => {
     }
  */
 app.get("/users/:userId/friends", (req, res) => {
-  connection.query(
-    `
-(
-SELECT email, name, privateKey, FALSE AS pending FROM users
-WHERE
-email IN
-(
-SELECT toEmail AS email FROM friends WHERE fromEmail = ?
-INTERSECT
-SELECT fromEmail AS email FROM friends WHERE toEmail = ?
-)
-)
-UNION
-(
-SELECT email, name, privateKey, TRUE AS pending FROM users
-WHERE
-email IN
-(
-SELECT toEmail AS email FROM friends X
-WHERE
-    fromEmail = ?
-  AND
-    NOT EXISTS
-(
-SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
-)
-
-)
-)
-`,
-    [
-      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-      ethers.utils.toUtf8String(ethers.utils.base64.decode(req.params.userId)),
-    ],
-    (err, results, fields) => {
-      res.status(200).json({
-        friends: results.map((r) => {
-          const wallet = new ethers.Wallet("0x" + r.privateKey);
-          const publicKey = wallet.publicKey.slice(2);
-          return {
-            email: r.email,
-            name: r.name,
-            pending: !!r.pending,
-            publicKey: publicKey,
-          };
-        }),
-      });
-    }
+  const email = ethers.utils.toUtf8String(
+    ethers.utils.base64.decode(req.params.userId)
   );
+
+  Store.getFriendsOfUser(email)
+    .then((friends) => {
+      res.status(200).json({ friends });
+    })
+    .catch((err) => res.status(500).json({ message: "FAILED" }));
 });
 
 module.exports = app;

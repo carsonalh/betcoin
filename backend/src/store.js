@@ -1,4 +1,5 @@
 const connection = require("./database");
+const ethers = require("ethers");
 
 /**
  * Wrapper class for data storage.
@@ -97,6 +98,59 @@ SELECT COUNT(*) < 1 AS \`pending\` FROM friends WHERE toEmail = ? AND fromEmail 
               to: toEmail,
               pending,
             });
+          }
+        }
+      );
+    });
+  }
+
+  static async getFriendsOfUser(userEmail) {
+    return new Promise((resolve, reject) => {
+      connection.query(
+        `
+      (
+        SELECT email, name, privateKey, FALSE AS pending FROM users
+        WHERE
+        email IN
+        (
+          SELECT toEmail AS email FROM friends WHERE fromEmail = ?
+          INTERSECT
+          SELECT fromEmail AS email FROM friends WHERE toEmail = ?
+        )
+      )
+      UNION
+      (
+        SELECT email, name, privateKey, TRUE AS pending FROM users
+        WHERE
+        email IN
+        (
+          SELECT toEmail AS email FROM friends X
+          WHERE
+              fromEmail = ?
+            AND
+              NOT EXISTS(
+                SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
+              )
+        )
+      )
+      `,
+        [userEmail, userEmail, userEmail, userEmail],
+        (err, results, fields) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(
+              results.map((r) => {
+                const wallet = new ethers.Wallet("0x" + r.privateKey);
+                const publicKey = wallet.publicKey.slice(2);
+                return {
+                  email: r.email,
+                  name: r.name,
+                  pending: !!r.pending,
+                  publicKey: publicKey,
+                };
+              })
+            );
           }
         }
       );
