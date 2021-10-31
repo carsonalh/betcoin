@@ -5,12 +5,14 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "test": "mocha ./src/**/__test__/*.test.js -w"
+    "test": "mocha ./src/**/__test__/*.test.js -w",
+    "db:init": "node scripts/database.init.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^10.0.0",
     "ethers": "^5.4.6",
     "express": "^4.17.1",
     "http-errors": "^1.7.2",

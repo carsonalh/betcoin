@@ -1,2 +1,6 @@
+# Obviously
 /node_modules
 /dist
+
+# Security
+/.env
