@@ -2,6 +2,7 @@ const app = require("express").Router();
 const connection = require("./database");
 const ethers = require("ethers");
 const { Store } = require("./store");
+const { Controller } = require("./controller");
 
 /*
     Used to create a new user and get user data. If the user already exists,
@@ -33,59 +34,18 @@ const { Store } = require("./store");
 */
 
 app.post("/users", (req, res) => {
-  const { user } = req.body;
-  const passwordHash = ethers.utils
-    .sha256(ethers.utils.toUtf8Bytes(user.password))
-    .slice(2);
-  const name = user.name || "Anonymous";
-  const id = ethers.utils.base64.encode(ethers.utils.toUtf8Bytes(user.email));
-
-  const wallet = ethers.Wallet.createRandom();
-  const privateKey = wallet.privateKey.slice(2);
-  const publicKey = wallet.publicKey.slice(2);
-
-  Store.getUserByEmail(user.email)
-    .then((storedUser) => {
-      if (storedUser) {
-        const { passwordSha256, privateKey } = storedUser;
-        if (passwordHash !== passwordSha256) {
-          res.status(403).json({ message: "FAILED" });
-        } else {
-          const wallet = new ethers.Wallet("0x" + privateKey);
-          const publicKey = wallet.publicKey.slice(2);
-          res.status(200).json({
-            user: {
-              id,
-              email: user.email,
-              name: storedUser.name,
-              publicKey,
-              privateKey,
-            },
-          });
-          return;
-        }
+  Controller.postUser(req.body.user)
+    .then((user) => {
+      res.status(200).json({ user });
+    })
+    .catch((err) => {
+      if (typeof err.statusCode === "number") {
+        res.status(err.statusCode).json({ message: err.message });
       } else {
-        return Store.createUser({
-          email: user.email,
-          name,
-          passwordHash,
-          privateKey,
-        });
+        console.error(err);
+        res.status(500).json({ message: "Internal server error" });
       }
-    })
-    .then(() => {
-      res.status(200).json({
-        user: {
-          id,
-          email: user.email,
-          name: name,
-          publicKey,
-          privateKey,
-        },
-      });
-      return;
-    })
-    .catch(() => res.status(500).json({ message: "FAILED" }));
+    });
 });
 
 /*

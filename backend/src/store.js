@@ -66,12 +66,12 @@ class Store {
     return new Promise((resolve, reject) => {
       connection.query(
         `INSERT INTO users VALUES (?, ?, ?, ?);`,
-        [user.email, user.name, user.passwordHash, user.privateKey],
+        [user.email, user.name, user.passwordSha256, user.privateKey],
         (err, results, fields) => {
           if (err) {
             reject(err);
           } else {
-            resolve(123);
+            resolve();
           }
         }
       );

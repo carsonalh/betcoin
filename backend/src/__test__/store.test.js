@@ -183,6 +183,44 @@ describe("Store", () => {
         })
       );
     });
+
+    it("gives the correct fields to `connection.query`", async () => {
+      const queryStub = sinon
+        .stub(connection, "query")
+        .callsFake((query, values, fn) => {
+          fn(
+            null,
+            [
+              {
+                email: "test@example.com",
+                name: "Test User",
+                passwordSha256:
+                  "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+                privateKey:
+                  "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
+              },
+            ],
+            []
+          );
+        });
+
+      await Store.createUser({
+        email: "test@example.com",
+        name: "John Doe",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        privateKey:
+          "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
+      });
+
+      assert(queryStub.calledOnce);
+      assert.deepEqual(queryStub.getCall(0).args[1], [
+        "test@example.com",
+        "John Doe",
+        "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
+      ]);
+    });
   });
 
   describe("addFriend", () => {
