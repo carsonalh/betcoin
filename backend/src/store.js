@@ -59,7 +59,7 @@ class Store {
       return Promise.reject(new TypeError("A property from user is missing"));
     }
 
-    if (typeof user.passwordHash !== "string") {
+    if (typeof user.passwordSha256 !== "string") {
       return Promise.reject(new TypeError("A property from user is missing"));
     }
 

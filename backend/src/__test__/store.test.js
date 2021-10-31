@@ -45,7 +45,7 @@ describe("Store", () => {
             {
               email: "test@example.com",
               name: "Test User",
-              passwordHash:
+              passwordSha256:
                 "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
               privateKey:
                 "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -60,7 +60,7 @@ describe("Store", () => {
       assert.deepEqual(user, {
         email: "test@example.com",
         name: "Test User",
-        passwordHash:
+        passwordSha256:
           "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
         privateKey:
           "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -75,7 +75,7 @@ describe("Store", () => {
             {
               email: "test@example.com",
               name: "Test User",
-              passwordHash:
+              passwordSha256:
                 "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
               privateKey:
                 "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -83,7 +83,7 @@ describe("Store", () => {
             {
               email: "test@example.com",
               name: "Test User",
-              passwordHash:
+              passwordSha256:
                 "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
               privateKey:
                 "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -119,7 +119,7 @@ describe("Store", () => {
       await assert.rejects(
         Store.createUser({
           name: "John Doe",
-          passwordHash:
+          passwordSha256:
             "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
           privateKey:
             "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -138,7 +138,7 @@ describe("Store", () => {
       await assert.rejects(
         Store.createUser({
           email: "test@example.com",
-          passwordHash:
+          passwordSha256:
             "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
           privateKey:
             "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -156,7 +156,7 @@ describe("Store", () => {
       await Store.createUser({
         email: "test@example.com",
         name: "John Doe",
-        passwordHash:
+        passwordSha256:
           "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
         privateKey:
           "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
@@ -176,7 +176,7 @@ describe("Store", () => {
         Store.createUser({
           email: "test@example.com",
           name: "John Doe",
-          passwordHash:
+          passwordSha256:
             "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
           privateKey:
             "d4d8a89826d109eb2302b68f4cb09d45d916123827d7f3d084c166c11448e757",
