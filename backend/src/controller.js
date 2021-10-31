@@ -1,4 +1,5 @@
 const ethers = require("ethers");
+const { NotFound } = require("http-errors");
 const createHttpError = require("http-errors");
 const { Store } = require("./store");
 const { UnprocessableEntity, InternalServerError, Unauthorized } =
@@ -61,6 +62,31 @@ class Controller {
       name: existingUser?.name || userOptions.name,
       publicKey: publicKey,
       privateKey: privateKey,
+    };
+  }
+
+  static async postFriend(fromEmail, toEmail) {
+    if (fromEmail === toEmail) {
+      throw new UnprocessableEntity("Cannot be friends with oneself");
+    }
+
+    const friend = await Store.getUserByEmail(toEmail);
+
+    if (!friend) {
+      throw new NotFound("A user with that email could not be found");
+    }
+
+    const friendship = await Store.addFriend(fromEmail, toEmail);
+
+    const friendPublicKey = new ethers.Wallet(
+      "0x" + friend.privateKey
+    ).publicKey.slice(2);
+
+    return {
+      email: friend.email,
+      name: friend.name,
+      pending: friendship.pending,
+      publicKey: friendPublicKey,
     };
   }
 }

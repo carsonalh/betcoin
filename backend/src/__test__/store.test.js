@@ -232,7 +232,7 @@ describe("Store", () => {
       const stub = sinon
         .stub(connection, "query")
         .callsFake((query, values, fn) => {
-          fn(null, [null, { pending: true }], []);
+          fn(null, [null, [{ pending: true }]], []);
         });
 
       await Store.addFriend("john.doe@example.com", "jane.doe@example.com");
@@ -250,7 +250,7 @@ describe("Store", () => {
 
     it("rejects if `connection.query` passes an error", async () => {
       sinon.stub(connection, "query").callsFake((query, values, fn) => {
-        fn(341, [null, { pending: false }], []);
+        fn(341, [null, [{ pending: false }]], []);
       });
 
       try {
@@ -263,7 +263,7 @@ describe("Store", () => {
 
     it("resolves to inserted data (+ pending) if there is no error", async () => {
       sinon.stub(connection, "query").callsFake((query, values, fn) => {
-        fn(null, [null, { pending: true }], ["pending"]);
+        fn(null, [null, [{ pending: true }]], ["pending"]);
       });
 
       assert.deepEqual(
@@ -278,7 +278,7 @@ describe("Store", () => {
 
     it("resolves to inserted data (+ pending = false) where the inverse relationship exists", async () => {
       sinon.stub(connection, "query").callsFake((query, values, fn) => {
-        fn(null, [null, { pending: false }], ["pending"]);
+        fn(null, [null, [{ pending: false }]], ["pending"]);
       });
 
       assert.deepEqual(

@@ -72,54 +72,23 @@ app.post("/users", (req, res) => {
 */
 
 app.post("/users/:userId/friends", (req, res) => {
+  // TODO: Abstract this validation/casting
   const email = ethers.utils.toUtf8String(
     ethers.utils.base64.decode(req.params.userId)
   );
-  const { friend: requestedFriend } = req.body;
 
-  if (email === requestedFriend.email) {
-    res.status(300).json({
-      message: "Cannot be friends with oneself",
-    });
-  }
-
-  console.log("FRIEND REQUEST", email, requestedFriend.email);
-  let friend;
-  Store.getUserByEmail(requestedFriend.email)
-    .then(
-      (returnedFriend) => {
-        friend = returnedFriend;
-        if (!friend) {
-          res
-            .status(400)
-            .json({ message: "User with that email could not be found" });
-          return;
-        } else {
-          // Add the friendship if it does not exist
-          return Store.addFriend(email, friend.email);
-        }
-      },
-      () => res.status(500).json({ message: "FAILED" })
-    )
-    .then(
-      (friendship) => {
-        const wallet = new ethers.Wallet("0x" + friend.privateKey);
-        const publicKey = wallet.publicKey.slice(2);
-
-        res.status(200).json({
-          friend: {
-            email: friend.email,
-            name: friend.name,
-            pending: friendship.pending,
-            publicKey,
-          },
-        });
-      },
-      (err) => {
-        console.error(err);
-        res.status(500).json({ message: "FAILED MAKING THE FRIENDSHIP" });
+  // TODO: Validate the body; for now an exception right here is the best move
+  Controller.postFriend(email, req.body.friend.email)
+    .then((friend) => {
+      res.status(200).json({ friend });
+    })
+    .catch((err) => {
+      if (typeof err.statusCode === "number") {
+        res.status(err.statusCode).json({ message: err.message });
+      } else {
+        res.status(500);
       }
-    );
+    });
 });
 
 /*

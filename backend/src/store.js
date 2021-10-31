@@ -91,12 +91,12 @@ SELECT COUNT(*) < 1 AS \`pending\` FROM friends WHERE toEmail = ? AND fromEmail 
             reject(err);
           } else {
             // Will ignore the result of the "INSERT" statement
-            const { pending } = results[1];
+            const { pending } = results[1][0];
 
             resolve({
               from: fromEmail,
               to: toEmail,
-              pending,
+              pending: !!pending,
             });
           }
         }
