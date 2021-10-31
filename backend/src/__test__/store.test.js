@@ -1,7 +1,19 @@
 const assert = require("assert");
+const mock = require("mock-require");
 const sinon = require("sinon");
 const connection = require("../database");
+
+mock("../database", {
+  query: () => {
+    throw new Error("Check that all database functions are mocked");
+  },
+});
+
 const { Store } = require("../store");
+
+after(() => {
+  mock.stop("../database");
+});
 
 describe("Store", () => {
   describe("getUserByEmail", () => {
