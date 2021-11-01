@@ -66,6 +66,12 @@ class Controller {
   }
 
   static async postFriend(fromEmail, toEmail) {
+    const user = await Store.getUserByEmail(fromEmail);
+
+    if (!user) {
+      throw new NotFound("Cannot POST friend to user that cannot be found");
+    }
+
     if (fromEmail === toEmail) {
       throw new UnprocessableEntity("Cannot be friends with oneself");
     }
@@ -73,7 +79,7 @@ class Controller {
     const friend = await Store.getUserByEmail(toEmail);
 
     if (!friend) {
-      throw new NotFound("A user with that email could not be found");
+      throw new NotFound("A friend with that email could not be found");
     }
 
     const friendship = await Store.addFriend(fromEmail, toEmail);

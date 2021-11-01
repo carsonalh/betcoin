@@ -159,7 +159,29 @@ describe("Controller", () => {
   });
 
   describe("postFriend", () => {
+    it("throws a 404 if the user themself does not exist", async () => {
+      const getUserStub = sinon.stub(Store, "getUserByEmail").resolves(null);
+
+      try {
+        await Controller.postFriend("john@example.com", "alan@example.com");
+        assert.fail();
+      } catch (e) {
+        assert(getUserStub.calledOnce);
+        assert(getUserStub.calledWith("john@example.com"));
+        assert.strictEqual(e.statusCode, 404);
+      }
+    });
+
     it("does not allow user to be friends with oneself", async () => {
+      sinon.stub(Store, "getUserByEmail").resolves({
+        email: "john.doe@example.com",
+        name: "John",
+        privateKey:
+          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+      });
+
       try {
         await Controller.postFriend(
           "john.doe@example.com",
@@ -172,7 +194,19 @@ describe("Controller", () => {
     });
 
     it("gives status 404 if the friend in question could not be found", async () => {
-      sinon.stub(Store, "getUserByEmail").resolves(null);
+      sinon
+        .stub(Store, "getUserByEmail")
+        .onCall(0)
+        .resolves({
+          email: "john.doe@example.com",
+          name: "John",
+          privateKey:
+            "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+          passwordSha256:
+            "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        })
+        .onCall(1)
+        .resolves(null);
 
       try {
         await Controller.postFriend(
@@ -186,14 +220,26 @@ describe("Controller", () => {
     });
 
     it("adds and returns the friend if there is such a user", async () => {
-      sinon.stub(Store, "getUserByEmail").resolves({
-        email: "jane.doe@example.com",
-        name: "Jane",
-        passwordSha256:
-          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
-        privateKey:
-          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
-      });
+      sinon
+        .stub(Store, "getUserByEmail")
+        .onCall(0)
+        .resolves({
+          email: "john.doe@example.com",
+          name: "John",
+          privateKey:
+            "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+          passwordSha256:
+            "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        })
+        .onCall(1)
+        .resolves({
+          email: "jane.doe@example.com",
+          name: "Jane",
+          privateKey:
+            "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+          passwordSha256:
+            "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        });
 
       const addFriendStub = sinon.stub(Store, "addFriend").resolves({
         email: "jane.doe@example.com",
