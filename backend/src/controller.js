@@ -89,6 +89,16 @@ class Controller {
       publicKey: friendPublicKey,
     };
   }
+
+  static async getFriends(userEmail) {
+    const user = await Store.getUserByEmail(userEmail);
+
+    if (!user) {
+      throw new NotFound("A user with that email could not be found");
+    }
+
+    return await Store.getFriendsOfUser(userEmail);
+  }
 }
 
 module.exports = { Controller };

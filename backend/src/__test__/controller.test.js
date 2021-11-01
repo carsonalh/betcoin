@@ -217,4 +217,83 @@ describe("Controller", () => {
       });
     });
   });
+
+  describe("getFriends", () => {
+    it("throws a 404 if the user does not exist", async () => {
+      sinon.stub(Store, "getUserByEmail").resolves(null);
+
+      try {
+        await Controller.getFriends("john.doe@example.com");
+        assert.fail();
+      } catch (e) {
+        assert.strictEqual(e.statusCode, 404);
+      }
+    });
+
+    it("gets the user's friends if the user exists", async () => {
+      sinon.stub(Store, "getUserByEmail").resolves({
+        email: "james.smith@example.com",
+        name: "James",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        privateKey:
+          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+      });
+
+      const getFriendsStub = sinon.stub(Store, "getFriendsOfUser").resolves([]);
+
+      const friends = await Controller.getFriends("james.smith@example.com");
+
+      assert(getFriendsStub.called);
+      assert.deepEqual(friends, []);
+    });
+
+    it("returns friends if they can be fetched from the store", async () => {
+      sinon.stub(Store, "getUserByEmail").resolves({
+        email: "james.smith@example.com",
+        name: "James",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        privateKey:
+          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+      });
+
+      const getFriendsStub = sinon.stub(Store, "getFriendsOfUser").resolves([
+        {
+          email: "john.doe@example.com",
+          name: "John",
+          pending: false,
+          publicKey:
+            "04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b",
+        },
+        {
+          email: "jane.doe@example.com",
+          name: "Jane",
+          pending: true,
+          publicKey:
+            "04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b",
+        },
+      ]);
+
+      const friends = await Controller.getFriends("james.smith@example.com");
+
+      assert(getFriendsStub.called);
+      assert.deepEqual(friends, [
+        {
+          email: "john.doe@example.com",
+          name: "John",
+          pending: false,
+          publicKey:
+            "04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b",
+        },
+        {
+          email: "jane.doe@example.com",
+          name: "Jane",
+          pending: true,
+          publicKey:
+            "04d3ef7c9f64aca07313ac6a9005b11e3b874c86e3cc7a17b6247b80716650987d8d558c7afdc187e516b9039200a7d2fe24bf58eabc8e97305e0701ed5b5a736b",
+        },
+      ]);
+    });
+  });
 });

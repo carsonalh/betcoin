@@ -1,8 +1,18 @@
 const app = require("express").Router();
-const connection = require("./database");
 const ethers = require("ethers");
-const { Store } = require("./store");
+const createHttpError = require("http-errors");
 const { Controller } = require("./controller");
+
+const { HttpError } = createHttpError;
+
+const catchHttpError = (req, res, next) => (err) => {
+  if (err instanceof HttpError) {
+    res.status(err.statusCode).json({ message: err.message });
+  } else {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 /*
     Used to create a new user and get user data. If the user already exists,
@@ -33,19 +43,12 @@ const { Controller } = require("./controller");
     }
 */
 
-app.post("/users", (req, res) => {
+app.post("/users", (req, res, next) => {
   Controller.postUser(req.body.user)
     .then((user) => {
       res.status(200).json({ user });
     })
-    .catch((err) => {
-      if (typeof err.statusCode === "number") {
-        res.status(err.statusCode).json({ message: err.message });
-      } else {
-        console.error(err);
-        res.status(500).json({ message: "Internal server error" });
-      }
-    });
+    .catch(catchHttpError(req, res, next));
 });
 
 /*
@@ -71,7 +74,7 @@ app.post("/users", (req, res) => {
     }
 */
 
-app.post("/users/:userId/friends", (req, res) => {
+app.post("/users/:userId/friends", (req, res, next) => {
   // TODO: Abstract this validation/casting
   const email = ethers.utils.toUtf8String(
     ethers.utils.base64.decode(req.params.userId)
@@ -82,13 +85,7 @@ app.post("/users/:userId/friends", (req, res) => {
     .then((friend) => {
       res.status(200).json({ friend });
     })
-    .catch((err) => {
-      if (typeof err.statusCode === "number") {
-        res.status(err.statusCode).json({ message: err.message });
-      } else {
-        res.status(500);
-      }
-    });
+    .catch(catchHttpError(req, res, next));
 });
 
 /*
@@ -111,16 +108,16 @@ app.post("/users/:userId/friends", (req, res) => {
         }]
     }
  */
-app.get("/users/:userId/friends", (req, res) => {
-  const email = ethers.utils.toUtf8String(
+app.get("/users/:userId/friends", (req, res, next) => {
+  const userEmail = ethers.utils.toUtf8String(
     ethers.utils.base64.decode(req.params.userId)
   );
 
-  Store.getFriendsOfUser(email)
+  Controller.getFriends(userEmail)
     .then((friends) => {
       res.status(200).json({ friends });
     })
-    .catch((err) => res.status(500).json({ message: "FAILED" }));
+    .catch(catchHttpError(req, res, next));
 });
 
 module.exports = app;
