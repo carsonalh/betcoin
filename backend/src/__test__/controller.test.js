@@ -25,22 +25,23 @@ describe("Controller", () => {
       sinon.stub(Store, "createUser").callsFake(async () => {});
     });
 
-    it("rejects if an email and a password are not given", async () => {
-      sinon.stub(Store, "getUserByEmail").callsFake(async () => null);
+    it("rejects with 422 if the body is not formatted correctly", async () => {
+      const inputs = [
+        {},
+        { user: { email: "john.doe@example.com" } },
+        { user: { password: "password" } },
+        { notUser: { password: "password" } },
+        undefined,
+      ];
 
-      await assert.rejects(Controller.postUser());
-
-      await assert.rejects(
-        Controller.postUser({
-          email: "john.doe@example.com",
-        })
-      );
-
-      await assert.rejects(
-        Controller.postUser({
-          password: "password",
-        })
-      );
+      for (const x of inputs) {
+        try {
+          await Controller.postUser(x);
+          assert.fail();
+        } catch (e) {
+          assert.strictEqual(e.statusCode, 422);
+        }
+      }
     });
 
     it("requires a name if the user does not exist", async () => {
@@ -50,8 +51,7 @@ describe("Controller", () => {
 
       await assert.rejects(
         Controller.postUser({
-          email: "john.doe@example.com",
-          password: "password",
+          user: { email: "john.doe@example.com", password: "password" },
         })
       );
     });
@@ -67,27 +67,20 @@ describe("Controller", () => {
       }));
 
       await Controller.postUser({
-        email: "john.doe@example.com",
-        password: "password",
+        user: { email: "john.doe@example.com", password: "password" },
       });
     });
 
-    it('throws an "internal" error if `Store.getUserByEmail` does', async () => {
+    it("propagates any error `Store.getUserByEmail` throws", async () => {
       sinon.stub(Store, "getUserByEmail").callsFake(async (email) => {
         throw "do not propagate";
       });
 
-      try {
-        await Controller.postUser({
-          email: "john.doe@example.com",
-          password: "password",
-        });
-        assert.fail();
-      } catch (e) {
-        // TODO: Add assert `isHttpError(e)` (throws TypeError for some reason
-        // when I try it)
-        assert.strictEqual(e.statusCode, 500);
-      }
+      await assert.rejects(
+        Controller.postUser({
+          user: { email: "john.doe@example.com", password: "password" },
+        })
+      );
     });
 
     it("returns the public-facing user if `Store.getUserByEmail` returns something", async () => {
@@ -102,8 +95,7 @@ describe("Controller", () => {
 
       assert.deepEqual(
         await Controller.postUser({
-          email: "john.doe@example.com",
-          password: "password",
+          user: { email: "john.doe@example.com", password: "password" },
         }),
         {
           id: "am9obi5kb2VAZXhhbXBsZS5jb20=",
@@ -127,9 +119,11 @@ describe("Controller", () => {
       sinon.stub(Store, "getUserByEmail").callsFake(async () => null);
 
       await Controller.postUser({
-        email: "john.doe@example.com",
-        name: "John",
-        password: "password",
+        user: {
+          email: "john.doe@example.com",
+          name: "John",
+          password: "password",
+        },
       });
 
       assert(createUserStub.calledOnce);
@@ -147,9 +141,11 @@ describe("Controller", () => {
 
       try {
         await Controller.postUser({
-          email: "john.doe@example.com",
-          name: "John",
-          password: "password1",
+          user: {
+            email: "john.doe@example.com",
+            name: "John",
+            password: "password1",
+          },
         });
         assert.fail();
       } catch (e) {
@@ -159,11 +155,34 @@ describe("Controller", () => {
   });
 
   describe("postFriend", () => {
-    it("throws a 404 if the user themself does not exist", async () => {
+    it("rejects with 422 if the request is malformatted", async () => {
+      const getUserStub = sinon.stub(Store, "getUserByEmail");
+
+      const inputs = [
+        {},
+        { friend: {} },
+        { friend: { notEmail: "john@example.com" } },
+        undefined,
+      ];
+
+      for (const x of inputs) {
+        try {
+          await Controller.postFriend("john.doe@example.com", x);
+          assert.fail();
+        } catch (e) {
+          assert.strictEqual(e.statusCode, 422);
+          assert(!getUserStub.called);
+        }
+      }
+    });
+
+    it("rejects with 404 if the user themself does not exist", async () => {
       const getUserStub = sinon.stub(Store, "getUserByEmail").resolves(null);
 
       try {
-        await Controller.postFriend("john@example.com", "alan@example.com");
+        await Controller.postFriend("john@example.com", {
+          friend: { email: "alan@example.com" },
+        });
         assert.fail();
       } catch (e) {
         assert(getUserStub.calledOnce);
@@ -183,10 +202,9 @@ describe("Controller", () => {
       });
 
       try {
-        await Controller.postFriend(
-          "john.doe@example.com",
-          "john.doe@example.com"
-        );
+        await Controller.postFriend("john.doe@example.com", {
+          friend: { email: "john.doe@example.com" },
+        });
         assert.fail();
       } catch (e) {
         assert.strictEqual(e.statusCode, 422);
@@ -209,10 +227,9 @@ describe("Controller", () => {
         .resolves(null);
 
       try {
-        await Controller.postFriend(
-          "john.doe@example.com",
-          "jane.doe@example.com"
-        );
+        await Controller.postFriend("john.doe@example.com", {
+          friend: { email: "jane.doe@example.com" },
+        });
         assert.fail();
       } catch (e) {
         assert.strictEqual(e.statusCode, 404);
@@ -247,10 +264,9 @@ describe("Controller", () => {
         pending: true,
       });
 
-      const friend = await Controller.postFriend(
-        "john.doe@example.com",
-        "jane.doe@example.com"
-      );
+      const friend = await Controller.postFriend("john.doe@example.com", {
+        friend: { email: "jane.doe@example.com" },
+      });
 
       assert(addFriendStub.called);
 

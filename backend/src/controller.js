@@ -1,46 +1,44 @@
 const ethers = require("ethers");
-const { NotFound } = require("http-errors");
+const { NotFound, InternalServerError } = require("http-errors");
 const createHttpError = require("http-errors");
+const Schema = require("./schema");
 const { Store } = require("./store");
-const { UnprocessableEntity, InternalServerError, Unauthorized } =
-  createHttpError;
+const { UnprocessableEntity, Unauthorized } = createHttpError;
 
 class Controller {
-  static async postUser(userOptions) {
-    if (!userOptions || !userOptions.email || !userOptions.password) {
-      throw new UnprocessableEntity("Invalid data format");
-    }
-
-    let existingUser;
-
+  static async postUser(request) {
     try {
-      existingUser = await Store.getUserByEmail(userOptions.email);
-    } catch (_) {
-      throw new InternalServerError();
+      request = await Schema.UserRequest.validate(request);
+    } catch (e) {
+      throw new UnprocessableEntity("Invalid request format");
     }
+
+    const { user } = request;
+
+    const existingUser = await Store.getUserByEmail(user.email);
 
     let privateKey;
 
     if (!existingUser) {
-      if (!userOptions.name) {
+      if (!user.name) {
         throw new UnprocessableEntity("New accounts must give a 'name' field");
       }
 
       const passwordSha256 = ethers.utils
-        .sha256(ethers.utils.toUtf8Bytes(userOptions.password))
+        .sha256(ethers.utils.toUtf8Bytes(user.password))
         .slice(2);
 
       privateKey = new ethers.Wallet.createRandom().privateKey.slice(2);
 
       await Store.createUser({
-        email: userOptions.email,
+        email: user.email,
         passwordSha256: passwordSha256,
-        name: userOptions.name,
+        name: user.name,
         privateKey: privateKey,
       });
     } else {
       const givenHash = ethers.utils
-        .sha256(ethers.utils.toUtf8Bytes(userOptions.password))
+        .sha256(ethers.utils.toUtf8Bytes(user.password))
         .slice(2);
       const storedHash = existingUser.passwordSha256;
 
@@ -53,36 +51,44 @@ class Controller {
 
     const publicKey = new ethers.Wallet("0x" + privateKey).publicKey.slice(2);
     const emailBase64 = ethers.utils.base64.encode(
-      ethers.utils.toUtf8Bytes(userOptions.email)
+      ethers.utils.toUtf8Bytes(user.email)
     );
 
     return {
       id: emailBase64,
-      email: existingUser?.email || userOptions.email,
-      name: existingUser?.name || userOptions.name,
+      email: existingUser?.email || user.email,
+      name: existingUser?.name || user.name,
       publicKey: publicKey,
       privateKey: privateKey,
     };
   }
 
-  static async postFriend(fromEmail, toEmail) {
-    const user = await Store.getUserByEmail(fromEmail);
+  static async postFriend(userEmail, request) {
+    try {
+      request = await Schema.FriendRequest.validate(request);
+    } catch (e) {
+      throw new UnprocessableEntity("Invalid request format");
+    }
+
+    const user = await Store.getUserByEmail(userEmail);
 
     if (!user) {
       throw new NotFound("Cannot POST friend to user that cannot be found");
     }
 
-    if (fromEmail === toEmail) {
+    const friendEmail = request.friend.email;
+
+    if (userEmail === friendEmail) {
       throw new UnprocessableEntity("Cannot be friends with oneself");
     }
 
-    const friend = await Store.getUserByEmail(toEmail);
+    const friend = await Store.getUserByEmail(friendEmail);
 
     if (!friend) {
       throw new NotFound("A friend with that email could not be found");
     }
 
-    const friendship = await Store.addFriend(fromEmail, toEmail);
+    const friendship = await Store.addFriend(userEmail, friendEmail);
 
     const friendPublicKey = new ethers.Wallet(
       "0x" + friend.privateKey

@@ -17,9 +17,7 @@ const catchHttpError = (req, res, next) => (err) => {
 };
 
 app.post("/users", (req, res, next) => {
-  const body = Schema.UserRequest.cast(req.body);
-
-  Controller.postUser(body.user)
+  Controller.postUser(req.body.user)
     .then((user) => {
       const response = Schema.UserResponse.cast({ user });
       res.status(200).json(response);
