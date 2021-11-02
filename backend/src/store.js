@@ -1,18 +1,21 @@
 const connection = require("./database");
 const ethers = require("ethers");
+const Schema = require("./schema");
 
 /**
  * Wrapper class for data storage.
  */
 class Store {
   /**
-   * @param {string} email The email of the user to get
+   * @param email The email of the user to get
    * @returns The user that has the given email
    */
   static async getUserByEmail(email) {
     return new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM users WHERE users.email = ?",
+        `
+        SELECT * FROM users WHERE users.email = ?
+        `,
         [email],
         (err, results, fields) => {
           if (err) {
@@ -38,34 +41,21 @@ class Store {
   }
 
   /**
-   * @param {object} user The properties with which to create the user
+   * @param user The properties with which to create the user
    * @throws If there was a connection error, or if the user already exists.
    */
   static async createUser(user) {
-    // TODO: Make some cleaner validation with yup or something
-    if (!user) {
-      return Promise.reject(new TypeError("User must be an object"));
-    }
-
-    if (typeof user.email !== "string") {
-      return Promise.reject(new TypeError("A property from user is missing"));
-    }
-
-    if (typeof user.name !== "string") {
-      return Promise.reject(new TypeError("A property from user is missing"));
-    }
-
-    if (typeof user.privateKey !== "string") {
-      return Promise.reject(new TypeError("A property from user is missing"));
-    }
-
-    if (typeof user.passwordSha256 !== "string") {
-      return Promise.reject(new TypeError("A property from user is missing"));
+    try {
+      user = await Schema.StoredUser.validate(user);
+    } catch (e) {
+      throw new TypeError("User does not have required shape");
     }
 
     return new Promise((resolve, reject) => {
       connection.query(
-        `INSERT INTO users VALUES (?, ?, ?, ?);`,
+        `
+        INSERT INTO users VALUES (?, ?, ?, ?);
+        `,
         [user.email, user.name, user.passwordSha256, user.privateKey],
         (err, results, fields) => {
           if (err) {
@@ -78,13 +68,22 @@ class Store {
     });
   }
 
+  /**
+   * @param {*} fromEmail The email sending the friend request
+   * @param {*} toEmail The user receiving the friend request
+   * @returns An object with the from email, to email, and "pending" property,
+   *          which indicates if the friendship is pending. This is only false
+   *          if there was already a reverse friendship.
+   */
   static async addFriend(fromEmail, toEmail) {
     return new Promise((resolve, reject) => {
       connection.query(
-        `INSERT IGNORE INTO friends (fromEmail, toEmail) VALUES (?, ?);
-SELECT COUNT(*) < 1 AS \`pending\` FROM friends WHERE toEmail = ? AND fromEmail = ?;
-`,
-        // SELECT NOT (COUNT(*) >= 1) AS \`pending\` FROM (SELECT * FROM friends WHERE toEmail = ? AND fromEmail = ?);`,
+        `
+        INSERT IGNORE INTO friends (fromEmail, toEmail) VALUES (?, ?);
+        SELECT COUNT(*) < 1 AS \`pending\`
+          FROM friends
+          WHERE toEmail = ? AND fromEmail = ?;
+        `,
         [fromEmail, toEmail, fromEmail, toEmail],
         (err, results, fields) => {
           if (err) {
@@ -108,32 +107,32 @@ SELECT COUNT(*) < 1 AS \`pending\` FROM friends WHERE toEmail = ? AND fromEmail 
     return new Promise((resolve, reject) => {
       connection.query(
         `
-      (
-        SELECT email, name, privateKey, FALSE AS pending FROM users
-        WHERE
-        email IN
         (
-          SELECT toEmail AS email FROM friends WHERE fromEmail = ?
-          INTERSECT
-          SELECT fromEmail AS email FROM friends WHERE toEmail = ?
-        )
-      )
-      UNION
-      (
-        SELECT email, name, privateKey, TRUE AS pending FROM users
-        WHERE
-        email IN
-        (
-          SELECT toEmail AS email FROM friends X
+          SELECT email, name, privateKey, FALSE AS pending FROM users
           WHERE
-              fromEmail = ?
-            AND
-              NOT EXISTS(
-                SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
-              )
+          email IN
+          (
+            SELECT toEmail AS email FROM friends WHERE fromEmail = ?
+            INTERSECT
+            SELECT fromEmail AS email FROM friends WHERE toEmail = ?
+          )
         )
-      )
-      `,
+        UNION
+        (
+          SELECT email, name, privateKey, TRUE AS pending FROM users
+          WHERE
+          email IN
+          (
+            SELECT toEmail AS email FROM friends X
+            WHERE
+                fromEmail = ?
+              AND
+                NOT EXISTS(
+                  SELECT * FROM friends WHERE fromEmail = X.toEmail AND toEmail = X.fromEmail
+                )
+          )
+        )
+        `,
         [userEmail, userEmail, userEmail, userEmail],
         (err, results, fields) => {
           if (err) {

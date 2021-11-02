@@ -24,6 +24,17 @@ Schema.User = yup.object().shape({
 });
 
 /**
+ * A "user" entity as it is stored in the database. This is the version of the
+ * user with the least amount of duplicate data.
+ */
+Schema.StoredUser = yup.object().shape({
+  email: yup.string().required(),
+  name: yup.string().required(),
+  passwordSha256: yup.string().length(64).required(),
+  privateKey: yup.string().length(64).required(),
+});
+
+/**
  * Schema for the request to the `POST /users` route.
  */
 Schema.UserRequest = yup.object().shape({

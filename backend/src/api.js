@@ -31,9 +31,7 @@ app.post("/users/:userId/friends", (req, res, next) => {
     ethers.utils.base64.decode(req.params.userId)
   );
 
-  const body = Schema.FriendRequest.cast(req.body);
-
-  Controller.postFriend(email, body.friend.email)
+  Controller.postFriend(email, req.body)
     .then((friend) => {
       const response = Schema.FriendResponse.cast({ friend });
       res.status(200).json(response);
@@ -42,8 +40,7 @@ app.post("/users/:userId/friends", (req, res, next) => {
 });
 
 app.get("/users/:userId/friends", (req, res, next) => {
-  // TODO: Find a way to verify this
-
+  // TODO: Abstract this validation/casting
   const userEmail = ethers.utils.toUtf8String(
     ethers.utils.base64.decode(req.params.userId)
   );
