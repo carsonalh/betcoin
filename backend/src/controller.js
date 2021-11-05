@@ -1,11 +1,19 @@
 const ethers = require("ethers");
-const { NotFound, InternalServerError } = require("http-errors");
+const { NotFound, InternalServerError, BadRequest } = require("http-errors");
 const createHttpError = require("http-errors");
 const Schema = require("./schema");
 const { Store } = require("./store");
 const { UnprocessableEntity, Unauthorized } = createHttpError;
 
 class Controller {
+  static _isValidBase64(base64String) {
+    const reEncoded = ethers.utils.base64.encode(
+      ethers.utils.base64.decode(base64String)
+    );
+
+    return reEncoded === base64String;
+  }
+
   static async postUser(request) {
     try {
       request = await Schema.UserRequest.validate(request);
@@ -63,7 +71,15 @@ class Controller {
     };
   }
 
-  static async postFriend(userEmail, request) {
+  static async postFriend(userId, request) {
+    let userEmail;
+
+    if (!Controller._isValidBase64(userId)) {
+      throw new BadRequest("The user id was invalid");
+    }
+
+    userEmail = ethers.utils.toUtf8String(ethers.utils.base64.decode(userId));
+
     try {
       request = await Schema.FriendRequest.validate(request);
     } catch (e) {
@@ -102,7 +118,15 @@ class Controller {
     };
   }
 
-  static async getFriends(userEmail) {
+  static async getFriends(userId) {
+    if (!Controller._isValidBase64(userId)) {
+      throw new BadRequest("The user id was invalid");
+    }
+
+    const userEmail = ethers.utils.toUtf8String(
+      ethers.utils.base64.decode(userId)
+    );
+
     const user = await Store.getUserByEmail(userEmail);
 
     if (!user) {
