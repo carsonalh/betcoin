@@ -17,7 +17,7 @@ const catchHttpError = (req, res, next) => (err) => {
 };
 
 app.post("/users", (req, res, next) => {
-  Controller.postUser(req.body.user)
+  Controller.postUser(req.body)
     .then((user) => {
       const response = Schema.UserResponse.cast({ user });
       res.status(200).json(response);
@@ -26,12 +26,7 @@ app.post("/users", (req, res, next) => {
 });
 
 app.post("/users/:userId/friends", (req, res, next) => {
-  // TODO: Abstract this validation/casting
-  const email = ethers.utils.toUtf8String(
-    ethers.utils.base64.decode(req.params.userId)
-  );
-
-  Controller.postFriend(email, req.body)
+  Controller.postFriend(req.params.userId, req.body)
     .then((friend) => {
       const response = Schema.FriendResponse.cast({ friend });
       res.status(200).json(response);
@@ -40,12 +35,7 @@ app.post("/users/:userId/friends", (req, res, next) => {
 });
 
 app.get("/users/:userId/friends", (req, res, next) => {
-  // TODO: Abstract this validation/casting
-  const userEmail = ethers.utils.toUtf8String(
-    ethers.utils.base64.decode(req.params.userId)
-  );
-
-  Controller.getFriends(userEmail)
+  Controller.getFriends(req.params.userId)
     .then((friends) => {
       const response = Schema.FriendsResponse.cast({ friends });
       res.status(200).json(response);
