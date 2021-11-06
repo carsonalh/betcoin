@@ -1,17 +1,20 @@
 require("dotenv").config();
 
-const express = require("express");
-const bodyParser = require("body-parser");
-const api = require("./api");
-const app = express();
+const Koa = require("koa");
+const bodyParser = require("koa-bodyparser");
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  next();
+const usersRouter = require("./routes/routes.users");
+
+const app = new Koa();
+
+usersRouter.prefix("/api/users");
+
+app.use(bodyParser());
+app.use(usersRouter.routes());
+app.use(usersRouter.allowedMethods());
+app.use(async (ctx, next) => {
+  ctx.status = 404;
+  ctx.body = { message: "The requested route could not be found" };
 });
-app.use(bodyParser.json());
-app.use("/api", api);
-app.use("*", express.static(__dirname + "/dist"));
 
 app.listen(5000, () => console.log("Started the server"));
