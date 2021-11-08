@@ -50,6 +50,7 @@ Schema.UserRequest = yup.object().shape({
  */
 Schema.UserResponse = yup.object().shape({
   user: Schema.User,
+  token: yup.string().required(),
 });
 
 /**

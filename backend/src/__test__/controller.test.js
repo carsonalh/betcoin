@@ -1,7 +1,9 @@
+const jwt = require("jsonwebtoken");
 const sinon = require("sinon");
 const assert = require("assert");
 const ethers = require("ethers");
 const mock = require("mock-require");
+const env = require("../env");
 
 mock("../database", {
   query: () => {
@@ -97,9 +99,11 @@ describe("Controller", () => {
       }));
 
       assert.deepEqual(
-        await Controller.postUser({
-          user: { email: "john.doe@example.com", password: "password" },
-        }),
+        (
+          await Controller.postUser({
+            user: { email: "john.doe@example.com", password: "password" },
+          })
+        ).user,
         {
           id: "am9obi5kb2VAZXhhbXBsZS5jb20=",
           email: "john.doe@example.com",
@@ -109,6 +113,36 @@ describe("Controller", () => {
           privateKey:
             "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
         }
+      );
+    });
+
+    it("returns a token with the user id of the registered/signed-in user", async () => {
+      const token = Symbol();
+      const signStub = sinon.stub(jwt, "sign").returns(token);
+
+      sinon.stub(Store, "getUserByEmail").callsFake(async (email) => ({
+        email: "john.doe@example.com",
+        name: "John",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        privateKey:
+          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+      }));
+
+      const response = await Controller.postUser({
+        user: { email: "john.doe@example.com", password: "password" },
+      });
+
+      assert.strictEqual(response.token, token);
+
+      assert(signStub.calledOnce);
+      assert(
+        signStub.calledWith(
+          {
+            userId: "am9obi5kb2VAZXhhbXBsZS5jb20=",
+          },
+          env.JWT_SECRET
+        )
       );
     });
 
@@ -187,8 +221,10 @@ describe("Controller", () => {
         pending: true,
       });
 
+      const badId = encode("john.doe@example.com") + ".//..\\12345";
+
       await assert.rejects(
-        Controller.postFriend(encode("john.doe@example.com") + ".//..\\12345", {
+        Controller.postFriend(badId, badId, {
           friend: { email: "jane.doe@example.com" },
         }),
         (e) => e.statusCode === 400
@@ -207,7 +243,11 @@ describe("Controller", () => {
 
       for (const x of inputs) {
         try {
-          await Controller.postFriend(encode("john.doe@example.com"), x);
+          await Controller.postFriend(
+            encode("john.doe@example.com"),
+            encode("john.doe@example.com"),
+            x
+          );
           assert.fail();
         } catch (e) {
           assert.strictEqual(e.statusCode, 422);
@@ -220,15 +260,40 @@ describe("Controller", () => {
       const getUserStub = sinon.stub(Store, "getUserByEmail").resolves(null);
 
       try {
-        await Controller.postFriend(encode("john@example.com"), {
-          friend: { email: "alan@example.com" },
-        });
+        await Controller.postFriend(
+          encode("john@example.com"),
+          encode("john@example.com"),
+          {
+            friend: { email: "alan@example.com" },
+          }
+        );
         assert.fail();
       } catch (e) {
         assert(getUserStub.calledOnce);
         assert(getUserStub.calledWith("john@example.com"));
         assert.strictEqual(e.statusCode, 404);
       }
+    });
+
+    it('rejects with 401 if the user does not match the "from" user in question', async () => {
+      sinon.stub(Store, "getUserByEmail").resolves({
+        email: "jane.doe@example.com",
+        name: "Jane",
+        privateKey:
+          "d67386cea815e7b28c9bd72276d203d82bf10e68624a9afe44c728947aec70fb",
+        passwordSha256:
+          "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+      });
+
+      await assert.rejects(
+        Controller.postFriend(
+          encode("john.doe@example.com"),
+          encode("jane.doe@example.com"),
+          {
+            friend: { email: "john.doe@example.com" },
+          }
+        )
+      );
     });
 
     it("does not allow user to be friends with oneself", async () => {
@@ -242,9 +307,13 @@ describe("Controller", () => {
       });
 
       try {
-        await Controller.postFriend(encode("john.doe@example.com"), {
-          friend: { email: "john.doe@example.com" },
-        });
+        await Controller.postFriend(
+          encode("john.doe@example.com"),
+          encode("john.doe@example.com"),
+          {
+            friend: { email: "john.doe@example.com" },
+          }
+        );
         assert.fail();
       } catch (e) {
         assert.strictEqual(e.statusCode, 422);
@@ -267,9 +336,13 @@ describe("Controller", () => {
         .resolves(null);
 
       try {
-        await Controller.postFriend(encode("john.doe@example.com"), {
-          friend: { email: "jane.doe@example.com" },
-        });
+        await Controller.postFriend(
+          encode("john.doe@example.com"),
+          encode("john.doe@example.com"),
+          {
+            friend: { email: "jane.doe@example.com" },
+          }
+        );
         assert.fail();
       } catch (e) {
         assert.strictEqual(e.statusCode, 404);
@@ -305,6 +378,7 @@ describe("Controller", () => {
       });
 
       const friend = await Controller.postFriend(
+        encode("john.doe@example.com"),
         encode("john.doe@example.com"),
         {
           friend: { email: "jane.doe@example.com" },

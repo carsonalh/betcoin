@@ -1,8 +1,12 @@
 const ethers = require("ethers");
 const { NotFound, InternalServerError, BadRequest } = require("http-errors");
 const createHttpError = require("http-errors");
+const jwt = require("jsonwebtoken");
+
+const env = require("./env");
 const Schema = require("./schema");
 const { Store } = require("./store");
+
 const { UnprocessableEntity, Unauthorized } = createHttpError;
 
 class Controller {
@@ -62,23 +66,42 @@ class Controller {
       ethers.utils.toUtf8Bytes(user.email)
     );
 
+    const token = jwt.sign({ userId: emailBase64 }, env.JWT_SECRET, {
+      expiresIn: env.JWT_TOKEN_EXPIRY,
+    });
+
     return {
-      id: emailBase64,
-      email: existingUser?.email || user.email,
-      name: existingUser?.name || user.name,
-      publicKey: publicKey,
-      privateKey: privateKey,
+      user: {
+        id: emailBase64,
+        email: existingUser?.email || user.email,
+        name: existingUser?.name || user.name,
+        publicKey: publicKey,
+        privateKey: privateKey,
+      },
+      token: token,
     };
   }
 
-  static async postFriend(userId, request) {
-    let userEmail;
-
-    if (!Controller._isValidBase64(userId)) {
-      throw new BadRequest("The user id was invalid");
+  static async postFriend(tokenUserId, userId, request) {
+    if (
+      !Controller._isValidBase64(userId) ||
+      !Controller._isValidBase64(tokenUserId)
+    ) {
+      throw new BadRequest("A user id was invalid");
     }
 
-    userEmail = ethers.utils.toUtf8String(ethers.utils.base64.decode(userId));
+    const tokenUserEmail = ethers.utils.toUtf8String(
+      ethers.utils.base64.decode(tokenUserId)
+    );
+    const userEmail = ethers.utils.toUtf8String(
+      ethers.utils.base64.decode(userId)
+    );
+
+    if (tokenUserEmail !== userEmail) {
+      throw new Unauthorized(
+        "The signed-in user is not authorized for this operation"
+      );
+    }
 
     try {
       request = await Schema.FriendRequest.validate(request);
