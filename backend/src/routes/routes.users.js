@@ -1,6 +1,7 @@
 const Router = require("@koa/router");
 const { HttpError } = require("http-errors");
 
+const authorizationMiddleware = require("../middleware/middleware.authorization");
 const { Controller } = require("../controller");
 const Schema = require("../schema");
 
@@ -16,6 +17,7 @@ router.use(async (ctx, next) => {
         message: e.message,
       };
     } else {
+      console.error(e);
       ctx.status = 500;
       ctx.body = {
         message: "Internal server error",
@@ -25,19 +27,20 @@ router.use(async (ctx, next) => {
 });
 
 router.post("/", async (ctx, next) => {
-  const user = await Controller.postUser(ctx.request.body);
-  ctx.body = Schema.UserResponse.cast({ user });
+  const response = await Controller.postUser(ctx.request.body);
+  ctx.body = Schema.UserResponse.cast(response);
 });
 
-router.post("/:userId/friends", async (ctx, next) => {
+router.post("/:userId/friends", authorizationMiddleware, async (ctx, next) => {
   const friend = await Controller.postFriend(
+    ctx.auth.userId,
     ctx.params.userId,
     ctx.request.body
   );
   ctx.body = Schema.FriendResponse.cast({ friend });
 });
 
-router.get("/:userId/friends", async (ctx, next) => {
+router.get("/:userId/friends", authorizationMiddleware, async (ctx, next) => {
   const friends = await Controller.getFriends(ctx.params.userId);
   ctx.body = Schema.FriendsResponse.cast({ friends });
 });
